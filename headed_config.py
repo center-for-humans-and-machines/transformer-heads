@@ -29,7 +29,7 @@ def create_headed_model_config(base_config_class: Type[PretrainedConfig]):
                 if output_heads is not None
                 else []
             )
-            super().__init__(**kwargs)
+            super().__init__(*args, **kwargs)
 
         def to_base_class(self):
             return base_config_class(*self.args, **self.kwargs)

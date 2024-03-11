@@ -3,7 +3,7 @@ from transformers.models.mistral.modeling_mistral import (
     MistralPreTrainedModel,
 )
 from transformers.modeling_outputs import BaseModelOutputWithPast
-from headed_mistral_config import HeadConfig
+from headed_config import HeadConfig
 from headed_output import HeadedModelOutput
 from mlp_head import MLPHead
 import torch.nn as nn
@@ -11,7 +11,7 @@ import torch
 from typing import Optional, List, Union, Tuple, Dict, Type
 
 from transformers import PreTrainedModel, PretrainedConfig
-from headed_mistral_config import create_headed_model_config
+from headed_config import create_headed_model_config
 
 
 def get_headed_pretrained_model_class(base_model_class: Type[PreTrainedModel]):

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from util import patch_state_dict
-from headed_mistral_config import HeadConfig
+from headed_config import HeadConfig
 from safetensors.torch import save_file, load_file
 
 activation_map = {"sigmoid": nn.Sigmoid, "linear": nn.Identity, "relu": nn.ReLU}
