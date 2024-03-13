@@ -1,5 +1,6 @@
 import torch
 import bitsandbytes as bnb
+from collections import defaultdict
 
 
 def patch_state_dict(state_dict):
@@ -29,3 +30,31 @@ def find_all_linear_names(bits, model, noadd=[]):
     if "lm_head" in lora_module_names:  # needed for 16-bit
         lora_module_names.remove("lm_head")
     return list(lora_module_names)
+
+
+def print_trainable_parameters(model, use_4bit=False):
+    """
+    Prints the number of trainable parameters in the model.
+    """
+    trainable_params = 0
+    all_param = 0
+    params_by_dtype = defaultdict(int)
+    trainable_params_by_dtype = defaultdict(int)
+    for name, param in model.named_parameters():
+        num_params = param.numel()
+        # if using DS Zero 3 and the weights are initialized empty
+        if num_params == 0 and hasattr(param, "ds_numel"):
+            num_params = param.ds_numel
+
+        all_param += num_params
+        params_by_dtype[param.dtype] += num_params
+        if param.requires_grad:
+            trainable_params_by_dtype[param.dtype] += num_params
+            trainable_params += num_params
+    if use_4bit:
+        trainable_params /= 2
+    print(
+        f"all params: {all_param} || trainable params: {trainable_params} || trainable%: {100 * trainable_params / all_param}"
+    )
+    print("params by dtype:", params_by_dtype)
+    print("trainable params by dtype:", trainable_params_by_dtype)

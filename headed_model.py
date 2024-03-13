@@ -1,3 +1,4 @@
+import json
 import os
 from os import PathLike
 from transformers.models.mistral.modeling_mistral import (
@@ -12,6 +13,7 @@ from mlp_head import MLPHead
 import torch.nn as nn
 import torch
 from typing import Optional, List, Union, Tuple, Dict, Type, Any, Callable
+from types import MethodType
 from abc import ABC, abstractmethod
 
 from transformers import PreTrainedModel, PretrainedConfig
@@ -35,6 +37,49 @@ model_type_map = {
 }
 
 
+def patch_save_pretrained(model, preserve_old: bool = True):
+    def save_pretrained(
+        self,
+        save_directory: str | PathLike,
+        is_main_process: bool = True,
+        state_dict: Dict | None = None,
+        save_function: Callable[..., Any] = torch.save,
+        push_to_hub: bool = False,
+        max_shard_size: int | str = "5GB",
+        safe_serialization: bool = True,
+        variant: str | None = None,
+        token: str | bool | None = None,
+        save_peft_format: bool = True,
+        **kwargs
+    ):
+        os.makedirs(save_directory, exist_ok=True)
+        self.old_save_pretrained(
+            save_directory=save_directory,
+            is_main_process=is_main_process,
+            state_dict=state_dict,
+            save_function=save_function,
+            push_to_hub=push_to_hub,
+            max_shard_size=max_shard_size,
+            safe_serialization=safe_serialization,
+            variant=variant,
+            token=token,
+            save_peft_format=save_peft_format,
+            **kwargs
+        )
+        head: MLPHead
+        for head in self.heads.values():
+            if head.requires_individual_saving:
+                head.save_to_safetensors(save_directory)
+        with open(os.path.join(save_directory, "head_configs.json"), "w") as f:
+            json.dump(self.head_configs, f)
+
+    if preserve_old:
+        model.old_save_pretrained = model.save_pretrained
+    else:
+        model.old_save_pretrained = MethodType(lambda *args, **kwargs: None, model)
+    model.save_pretrained = MethodType(save_pretrained, model)
+
+
 class HeadedModel(ABC, PreTrainedModel):
     head_configs: List[HeadConfig]
     vocab_size: int
@@ -51,7 +96,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             super().__init__(config)
             self.model = model_type_map[config.model_type](config.to_base_class())
             self.vocab_size: int = config.vocab_size
-            self.head_configs: List[HeadConfig] = {
+            self.head_configs: dict[str:HeadConfig] = {
                 cfg.name: cfg for cfg in config.output_heads
             }
             self.heads = nn.ModuleDict(
@@ -71,7 +116,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     self.lm_head = head.lins[0]
                     self.lm_head_config = self.head_configs[name]
                     del self.heads[name]
-                    del self.head_configs[name]
                     break
 
         def get_input_embeddings(self):
@@ -125,13 +169,13 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             position_ids: Optional[torch.LongTensor] = None,
             past_key_values: Optional[List[torch.FloatTensor]] = None,
             inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[
-                Dict[str, Union[torch.LongTensor, torch.FloatTensor]]
-            ] = None,
             use_cache: Optional[bool] = None,
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = False,
+            **labels
         ) -> HeadedModelOutput:
+            assert not return_dict
             output_attentions = (
                 output_attentions
                 if output_attentions is not None
