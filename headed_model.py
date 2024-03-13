@@ -1,14 +1,18 @@
+import os
+from os import PathLike
 from transformers.models.mistral.modeling_mistral import (
     MistralModel,
     MistralPreTrainedModel,
 )
 from transformers.modeling_outputs import BaseModelOutputWithPast
+from transformers.utils import ModelOutput
 from headed_config import HeadConfig
 from headed_output import HeadedModelOutput
 from mlp_head import MLPHead
 import torch.nn as nn
 import torch
-from typing import Optional, List, Union, Tuple, Dict, Type
+from typing import Optional, List, Union, Tuple, Dict, Type, Any, Callable
+from abc import ABC, abstractmethod
 
 from transformers import PreTrainedModel, PretrainedConfig
 from headed_config import create_headed_model_config
@@ -31,24 +35,43 @@ model_type_map = {
 }
 
 
+class HeadedModel(ABC, PreTrainedModel):
+    head_configs: List[HeadConfig]
+    vocab_size: int
+    heads: nn.ModuleDict
+    lm_head_config: Optional[HeadConfig]
+    lm_head: Optional[MLPHead]
+
+
 def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
-    class TransformerWithHeads(get_headed_pretrained_model_class(base_model_class)):
+    class TransformerWithHeads(
+        get_headed_pretrained_model_class(base_model_class), HeadedModel
+    ):
         def __init__(self, config: PretrainedConfig):
             super().__init__(config)
             self.model = model_type_map[config.model_type](config.to_base_class())
             self.vocab_size: int = config.vocab_size
-            self.head_configs: List[HeadConfig] = config.output_heads
-            self.heads = nn.ModuleList(
-                [
-                    MLPHead.from_head_config(head_config)
-                    for head_config in config.output_heads
-                ]
+            self.head_configs: List[HeadConfig] = {
+                cfg.name: cfg for cfg in config.output_heads
+            }
+            self.heads = nn.ModuleDict(
+                {
+                    name: MLPHead.from_head_config(head_config)
+                    for name, head_config in self.head_configs.items()
+                }
             )
+
+            # Make pretrained loading of lm_head work
             self.lm_head = None
+            self.lm_head_config = None
+            print(type(self.heads))
             head: MLPHead
-            for head_config, head in zip(self.head_configs, self.heads):
-                if head_config.name == "lm_head":
+            for name, head in self.heads.items():
+                if name == "lm_head":
                     self.lm_head = head.lins[0]
+                    self.lm_head_config = self.head_configs[name]
+                    del self.heads[name]
+                    del self.head_configs[name]
                     break
 
         def get_input_embeddings(self):
@@ -56,6 +79,38 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
 
         def set_input_embeddings(self, value):
             self.model.embed_tokens = value
+
+        def save_pretrained(
+            self,
+            save_directory: str | PathLike,
+            is_main_process: bool = True,
+            state_dict: Dict | None = None,
+            save_function: Callable[..., Any] = torch.save,
+            push_to_hub: bool = False,
+            max_shard_size: int | str = "5GB",
+            safe_serialization: bool = True,
+            variant: str | None = None,
+            token: str | bool | None = None,
+            save_peft_format: bool = True,
+            **kwargs
+        ):
+            super().save_pretrained(
+                save_directory,
+                is_main_process,
+                state_dict,
+                save_function,
+                push_to_hub,
+                max_shard_size,
+                safe_serialization,
+                variant,
+                token,
+                save_peft_format,
+                **kwargs
+            )
+            head: MLPHead
+            for head in self.heads:
+                if head.requires_individual_saving:
+                    head.save_to_safetensors(save_directory)
 
         def set_decoder(self, decoder):
             self.model = decoder
@@ -87,9 +142,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 if output_hidden_states is not None
                 else self.config.output_hidden_states
             )
-            return_dict = (
-                return_dict if return_dict is not None else self.config.use_return_dict
-            )
+            print("In id shape", input_ids.shape)
 
             # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
             outputs: BaseModelOutputWithPast = self.model(
@@ -101,7 +154,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 use_cache=use_cache,
                 output_attentions=output_attentions,
                 output_hidden_states=True,
-                return_dict=return_dict,
             )
 
             out_logits = {}
@@ -110,7 +162,15 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             hidden_states = outputs.hidden_states
             loss = 0
             loss_by_head = {}
-            for head, head_config in (self.heads, self.head_configs):
+            for key in list(self.heads.keys()) + ["lm_head"]:
+                if key == "lm_head":
+                    if self.lm_head is None:
+                        continue
+                    head = self.lm_head
+                    head_config = self.lm_head_config
+                else:
+                    head = self.heads[key]
+                    head_config = self.head_configs[key]
                 selected_hidden_states = hidden_states[head_config.layer_hook]
                 logits: torch.FloatTensor = head(selected_hidden_states)
                 if head_config.is_regression:
