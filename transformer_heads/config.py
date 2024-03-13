@@ -1,7 +1,7 @@
-from transformers import PretrainedConfig
-from transformers.models.mistral.modeling_mistral import MistralConfig
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Optional, Type
+
+from transformers import PretrainedConfig
 
 
 @dataclass

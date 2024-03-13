@@ -1,23 +1,16 @@
-import json
-import os
+from abc import ABC
 from os import PathLike
-from transformers.models.mistral.modeling_mistral import (
-    MistralModel,
-    MistralPreTrainedModel,
-)
-from transformers.modeling_outputs import BaseModelOutputWithPast
-from transformers.utils import ModelOutput
-from headed_config import HeadConfig
-from headed_output import HeadedModelOutput
-from mlp_head import MLPHead
-import torch.nn as nn
-import torch
-from typing import Optional, List, Union, Tuple, Dict, Type, Any, Callable
-from types import MethodType
-from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Type
 
-from transformers import PreTrainedModel, PretrainedConfig
-from headed_config import create_headed_model_config
+import torch
+import torch.nn as nn
+from transformers import PretrainedConfig, PreTrainedModel
+from transformers.modeling_outputs import BaseModelOutputWithPast
+
+from transformer_heads.config import HeadConfig, create_headed_model_config
+from transformer_heads.constants import loss_fct_map, model_type_map
+from transformer_heads.model.head import MLPHead
+from transformer_heads.output import HeadedModelOutput
 
 
 def get_headed_pretrained_model_class(base_model_class: Type[PreTrainedModel]):
@@ -25,59 +18,6 @@ def get_headed_pretrained_model_class(base_model_class: Type[PreTrainedModel]):
         config_class = create_headed_model_config(base_model_class.config_class)
 
     return HeadedPreTrainedModel
-
-
-loss_fct_map = {
-    "mse": nn.MSELoss(),
-    "cross_entropy": nn.CrossEntropyLoss(),
-}
-
-model_type_map = {
-    "mistral": MistralModel,
-}
-
-
-def patch_save_pretrained(model, preserve_old: bool = True):
-    def save_pretrained(
-        self,
-        save_directory: str | PathLike,
-        is_main_process: bool = True,
-        state_dict: Dict | None = None,
-        save_function: Callable[..., Any] = torch.save,
-        push_to_hub: bool = False,
-        max_shard_size: int | str = "5GB",
-        safe_serialization: bool = True,
-        variant: str | None = None,
-        token: str | bool | None = None,
-        save_peft_format: bool = True,
-        **kwargs
-    ):
-        os.makedirs(save_directory, exist_ok=True)
-        self.old_save_pretrained(
-            save_directory=save_directory,
-            is_main_process=is_main_process,
-            state_dict=state_dict,
-            save_function=save_function,
-            push_to_hub=push_to_hub,
-            max_shard_size=max_shard_size,
-            safe_serialization=safe_serialization,
-            variant=variant,
-            token=token,
-            save_peft_format=save_peft_format,
-            **kwargs
-        )
-        head: MLPHead
-        for head in self.heads.values():
-            if head.requires_individual_saving:
-                head.save_to_safetensors(save_directory)
-        with open(os.path.join(save_directory, "head_configs.json"), "w") as f:
-            json.dump(self.head_configs, f)
-
-    if preserve_old:
-        model.old_save_pretrained = model.save_pretrained
-    else:
-        model.old_save_pretrained = MethodType(lambda *args, **kwargs: None, model)
-    model.save_pretrained = MethodType(save_pretrained, model)
 
 
 class HeadedModel(ABC, PreTrainedModel):
@@ -136,7 +76,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             variant: str | None = None,
             token: str | bool | None = None,
             save_peft_format: bool = True,
-            **kwargs
+            **kwargs,
         ):
             super().save_pretrained(
                 save_directory,
@@ -149,10 +89,10 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 variant,
                 token,
                 save_peft_format,
-                **kwargs
+                **kwargs,
             )
             head: MLPHead
-            for head in self.heads:
+            for head in self.heads.values():
                 if head.requires_individual_saving:
                     head.save_to_safetensors(save_directory)
 
@@ -173,7 +113,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = False,
-            **labels
+            **labels,
         ) -> HeadedModelOutput:
             assert not return_dict
             output_attentions = (

@@ -1,6 +1,15 @@
-import torch
-import bitsandbytes as bnb
+import json
+import os
 from collections import defaultdict
+from os import PathLike
+from types import MethodType
+from typing import Any, Callable, Dict, TYPE_CHECKING
+
+import bitsandbytes as bnb
+import torch
+
+if TYPE_CHECKING:
+    from transformer_heads.model.head import MLPHead
 
 
 def patch_state_dict(state_dict):
@@ -58,3 +67,46 @@ def print_trainable_parameters(model, use_4bit=False):
     )
     print("params by dtype:", params_by_dtype)
     print("trainable params by dtype:", trainable_params_by_dtype)
+
+
+def patch_save_pretrained(model, preserve_old: bool = True):
+    def save_pretrained(
+        self,
+        save_directory: str | PathLike,
+        is_main_process: bool = True,
+        state_dict: Dict | None = None,
+        save_function: Callable[..., Any] = torch.save,
+        push_to_hub: bool = False,
+        max_shard_size: int | str = "5GB",
+        safe_serialization: bool = True,
+        variant: str | None = None,
+        token: str | bool | None = None,
+        save_peft_format: bool = True,
+        **kwargs,
+    ):
+        os.makedirs(save_directory, exist_ok=True)
+        self.old_save_pretrained(
+            save_directory=save_directory,
+            is_main_process=is_main_process,
+            state_dict=state_dict,
+            save_function=save_function,
+            push_to_hub=push_to_hub,
+            max_shard_size=max_shard_size,
+            safe_serialization=safe_serialization,
+            variant=variant,
+            token=token,
+            save_peft_format=save_peft_format,
+            **kwargs,
+        )
+        head: MLPHead
+        for head in self.heads.values():
+            if head.requires_individual_saving:
+                head.save_to_safetensors(save_directory)
+        with open(os.path.join(save_directory, "head_configs.json"), "w") as f:
+            json.dump(self.head_configs, f)
+
+    if preserve_old:
+        model.old_save_pretrained = model.save_pretrained
+    else:
+        model.old_save_pretrained = MethodType(lambda *args, **kwargs: None, model)
+    model.save_pretrained = MethodType(save_pretrained, model)

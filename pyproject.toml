@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[project]
+name = "transformer_heads"
+dynamic = ["version"]
+dependencies = [
+    "torch",
+    "transformers",
+    "peft",
+    "bitsandbytes"
+]
+requires-python = ">= 3.9"
+authors = [
+  {name = "Yannik Keller", email = "yannik@kelnet.de"},
+]
+description = "Attach custom heads to transformer models."
+readme = "README.md"
+license = {text = "MIT License"}
+keywords = ["Transformer", "Qlora", "Linear Probe"]
+[tool.hatch.version]
+path = "transformer_heads/version.py"

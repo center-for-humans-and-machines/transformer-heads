@@ -1,13 +1,16 @@
-import os
-from transformers import PreTrainedModel, BitsAndBytesConfig, PretrainedConfig
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from typing import Type
-import torch
-from headed_model import get_multi_head_transformer, HeadedModel, patch_save_pretrained
-from mlp_head import MLPHead
-from headed_config import HeadConfig, create_headed_model_config
-from util import find_all_linear_names, print_trainable_parameters
 import json
+import os
+from typing import Type
+
+import torch
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import BitsAndBytesConfig, PretrainedConfig, PreTrainedModel
+
+from transformer_heads.config import HeadConfig, create_headed_model_config
+from transformer_heads.model.head import MLPHead
+from transformer_heads.model.model import HeadedModel, get_multi_head_transformer
+
+from .model import find_all_linear_names, patch_save_pretrained
 
 
 def patch_quantization_config(quantization_config: BitsAndBytesConfig):
@@ -16,7 +19,7 @@ def patch_quantization_config(quantization_config: BitsAndBytesConfig):
     quantization_config.llm_int8_skip_modules.extend(["MLPHead", "heads"])
 
 
-def get_from_pretrained(
+def load_headed(
     base_model_class: Type[PreTrainedModel],
     model_name: str,
     head_configs=None,
@@ -24,7 +27,7 @@ def get_from_pretrained(
     only_inference: bool = False,
     device_map="auto",
     quantization_config: BitsAndBytesConfig = None,
-    **kwargs
+    **kwargs,
 ):
     assert head_configs is not None or head_folder_path is not None
     assert head_configs is None or head_folder_path is None
@@ -38,7 +41,9 @@ def get_from_pretrained(
         bits = (
             4
             if quantization_config.load_in_4bit
-            else 8 if quantization_config.load_in_8bit else 32
+            else 8
+            if quantization_config.load_in_8bit
+            else 32
         )
     base_model_config = base_model_class.config_class.from_pretrained(model_name)
     headed_config_class = create_headed_model_config(base_model_class.config_class)
@@ -68,7 +73,7 @@ def get_from_pretrained(
     return model
 
 
-def load_trained_qlora_with_heads(
+def load_qlora_with_heads(
     base_model_class: Type[PreTrainedModel],
     path: str,
     quantization_config: BitsAndBytesConfig,
@@ -77,7 +82,7 @@ def load_trained_qlora_with_heads(
     device_map="auto",
     torch_dtype=torch.float32,
     gradient_checkpointing: bool = False,
-    **kwargs
+    **kwargs,
 ):
     patch_quantization_config(quantization_config)
     adapt_config_path = os.path.join(path, "adapter_config.json")
@@ -125,7 +130,7 @@ def load_trained_qlora_with_heads(
     return model
 
 
-def load_pretrained_qlora(
+def create_headed_qlora(
     base_model_class: Type[PreTrainedModel],
     model_name: str,
     quantization_config: BitsAndBytesConfig,
@@ -134,13 +139,15 @@ def load_pretrained_qlora(
     fully_trained_heads: bool = True,
     device_map="auto",
     gradient_checkpointing: bool = False,
-    **kwargs
+    **kwargs,
 ):
     patch_quantization_config(quantization_config)
     bits = (
         4
         if quantization_config.load_in_4bit
-        else 8 if quantization_config.load_in_8bit else 32
+        else 8
+        if quantization_config.load_in_8bit
+        else 32
     )
     base_model_config: PretrainedConfig = base_model_class.config_class.from_pretrained(
         model_name

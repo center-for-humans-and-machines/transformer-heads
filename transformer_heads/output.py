@@ -1,7 +1,8 @@
-from transformers.utils import ModelOutput
 from dataclasses import dataclass
-import torch
 from typing import Optional, Tuple
+
+import torch
+from transformers.utils import ModelOutput
 
 
 @dataclass

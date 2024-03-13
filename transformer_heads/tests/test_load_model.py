@@ -1,16 +1,17 @@
-from transformers import MistralForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from util import print_trainable_parameters
-from peft import LoraConfig
-from load_model import (
-    get_from_pretrained,
-    load_pretrained_qlora,
-    load_trained_qlora_with_heads,
-)
 import torch
-from headed_model import get_multi_head_transformer
-from headed_output import HeadedModelOutput
-from headed_config import HeadConfig
 from fire import Fire
+from peft import LoraConfig
+from transformers import AutoTokenizer, BitsAndBytesConfig, MistralForCausalLM
+
+from transformer_heads.config import HeadConfig
+from transformer_heads.model.model import get_multi_head_transformer
+from transformer_heads.output import HeadedModelOutput
+from transformer_heads.util.load_model import (
+    create_headed_qlora,
+    load_headed,
+    load_qlora_with_heads,
+)
+from transformer_heads.util.model import print_trainable_parameters
 
 heads = [
     HeadConfig(
@@ -71,16 +72,16 @@ def get_test_inputs(device):
     tk = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
     inputs = tk("Paris is the capital of", return_tensors="pt")
     inputs.to(device)
-    return inputs
+    return tk, inputs
 
 
 def test_load_model():
-    model = get_from_pretrained(
+    model = load_headed(
         MistralForCausalLM, "mistralai/Mistral-7B-v0.1", heads, device_map="cpu"
     )
     print("Loaded headed Mistral model successfully!")
 
-    inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device)
     outputs: HeadedModelOutput = model(**inputs)
     logits = outputs.logits_by_head["lm_head"]
     next_logits = logits[0, -1, :]
@@ -113,18 +114,18 @@ def test_load_quantized():
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
     )
-    model = get_from_pretrained(
+    model = load_headed(
         MistralForCausalLM,
         "mistralai/Mistral-7B-v0.1",
         heads,
         device_map="cuda",
         quantization_config=quantization_config,
     )
-    inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device)
     outputs1 = model(**inputs)
     model.save_pretrained("mistral_heads")
     del model
-    model = get_from_pretrained(
+    model = load_headed(
         MistralForCausalLM,
         "mistralai/Mistral-7B-v0.1",
         head_folder_path="mistral_heads",
@@ -153,7 +154,7 @@ def test_qlora():
         bias="none",
         task_type="CAUSAL_LM",
     )
-    model = load_pretrained_qlora(
+    model = create_headed_qlora(
         MistralForCausalLM,
         "mistralai/Mistral-7B-v0.1",
         quantization_config=quantization_config,
@@ -163,7 +164,7 @@ def test_qlora():
     )
     print_trainable_parameters(model, use_4bit=quantization_config.load_in_4bit)
     print("Loaded headed qlora Mistral model successfully!")
-    inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device)
     print(inputs["input_ids"].dtype)
     outputs: HeadedModelOutput = model(**inputs)
     logits = outputs.logits_by_head["lm_head"]
@@ -173,7 +174,7 @@ def test_qlora():
     model.save_pretrained("mistral_headed_qlora")
     print("Saved headed qlora Mistral model successfully!")
     del model
-    model = load_trained_qlora_with_heads(
+    model = load_qlora_with_heads(
         MistralForCausalLM,
         "mistral_headed_qlora",
         quantization_config,
