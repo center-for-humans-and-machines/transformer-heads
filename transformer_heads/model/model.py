@@ -49,7 +49,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             # Make pretrained loading of lm_head work
             self.lm_head = None
             self.lm_head_config = None
-            print(type(self.heads))
             head: MLPHead
             for name, head in self.heads.items():
                 if name == "lm_head":
@@ -57,6 +56,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     self.lm_head_config = self.head_configs[name]
                     del self.heads[name]
                     break
+            self._hf_peft_config_loaded = False
 
         def get_input_embeddings(self):
             return self.model.embed_tokens
@@ -126,7 +126,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 if output_hidden_states is not None
                 else self.config.output_hidden_states
             )
-            print("In id shape", input_ids.shape)
 
             # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
             outputs: BaseModelOutputWithPast = self.model(
@@ -144,8 +143,11 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             out_preds = {}
 
             hidden_states = outputs.hidden_states
-            loss = 0
+            loss = torch.tensor(
+                0.0, device=input_ids.device, dtype=torch.float32, requires_grad=True
+            )
             loss_by_head = {}
+            print("labels", labels)
             for key in list(self.heads.keys()) + ["lm_head"]:
                 if key == "lm_head":
                     if self.lm_head is None:
@@ -161,6 +163,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     out_preds[head_config.name] = logits
                 else:
                     out_logits[head_config.name] = logits
+                print(labels, head_config.name, head_config.loss_fct)
                 if (
                     labels is not None
                     and head_config.name in labels

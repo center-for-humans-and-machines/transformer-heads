@@ -27,10 +27,14 @@ def load_headed(
     only_inference: bool = False,
     device_map="auto",
     quantization_config: BitsAndBytesConfig = None,
+    freeze_base_model: bool = True,
     **kwargs,
 ):
     assert head_configs is not None or head_folder_path is not None
     assert head_configs is None or head_folder_path is None
+    assert (
+        quantization_config is None or only_inference or freeze_base_model
+    ), "You can only use quantization in inference mode or if you freeze the base model. Use qlora to modify the base model with quantization."
     if head_folder_path is not None:
         with open(os.path.join(head_folder_path, "head_configs.json"), "r") as f:
             head_configs = list(json.load(f).values())
@@ -41,9 +45,7 @@ def load_headed(
         bits = (
             4
             if quantization_config.load_in_4bit
-            else 8
-            if quantization_config.load_in_8bit
-            else 32
+            else 8 if quantization_config.load_in_8bit else 32
         )
     base_model_config = base_model_class.config_class.from_pretrained(model_name)
     headed_config_class = create_headed_model_config(base_model_class.config_class)
@@ -59,9 +61,17 @@ def load_headed(
         quantization_config=quantization_config,
         **kwargs,
     )
+    if freeze_base_model and quantization_config is None:
+        for name, param in model.named_parameters():
+            if not "heads" in name:
+                param.requires_grad = False
     if quantization_config is not None and bits < 16:
         if not only_inference:
             model = prepare_model_for_kbit_training(model)
+            model._hf_peft_config_loaded = (
+                True  # Nasty hack to avoid hf Trainer assertion error
+            )
+
         head: MLPHead
         for head in model.heads.values():
             if head_folder_path is not None:
@@ -70,6 +80,7 @@ def load_headed(
                 head.set_requires_grad(True)
                 head.requires_individual_saving = True
         patch_save_pretrained(model, preserve_old=False)
+
     return model
 
 
@@ -145,9 +156,7 @@ def create_headed_qlora(
     bits = (
         4
         if quantization_config.load_in_4bit
-        else 8
-        if quantization_config.load_in_8bit
-        else 32
+        else 8 if quantization_config.load_in_8bit else 32
     )
     base_model_config: PretrainedConfig = base_model_class.config_class.from_pretrained(
         model_name
