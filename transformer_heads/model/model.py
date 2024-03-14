@@ -147,7 +147,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 0.0, device=input_ids.device, dtype=torch.float32, requires_grad=True
             )
             loss_by_head = {}
-            print("labels", labels)
             for key in list(self.heads.keys()) + ["lm_head"]:
                 if key == "lm_head":
                     if self.lm_head is None:
@@ -163,7 +162,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     out_preds[head_config.name] = logits
                 else:
                     out_logits[head_config.name] = logits
-                print(labels, head_config.name, head_config.loss_fct)
                 if (
                     labels is not None
                     and head_config.name in labels
@@ -184,10 +182,8 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         )
                     use_labels = use_labels.view(-1)
                     use_labels = use_labels.to(use_logits.device)
-                    loss_by_head[head_config.name] = loss_fct(
-                        use_logits, use_labels[head_config.name]
-                    )
-                    loss += loss_by_head[head_config.name]
+                    loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
+                    loss = loss + loss_by_head[head_config.name]
 
             return HeadedModelOutput(
                 loss=loss,
