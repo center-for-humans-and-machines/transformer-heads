@@ -1,5 +1,5 @@
 import torch.nn as nn
-from transformers import MistralModel
+from transformers import MistralModel, GPT2Model
 
 loss_fct_map = {
     "mse": nn.MSELoss(),
@@ -7,5 +7,6 @@ loss_fct_map = {
 }
 
 model_type_map = {
-    "mistral": MistralModel,
+    "mistral": ("model", MistralModel),
+    "gpt2": ("transformer", GPT2Model),
 }

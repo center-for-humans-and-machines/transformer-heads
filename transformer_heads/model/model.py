@@ -34,7 +34,11 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
     ):
         def __init__(self, config: PretrainedConfig):
             super().__init__(config)
-            self.model = model_type_map[config.model_type](config.to_base_class())
+            setattr(
+                self,
+                model_type_map[config.model_type][0],
+                model_type_map[config.model_type][1](config.to_base_class()),
+            )
             self.vocab_size: int = config.vocab_size
             self.head_configs: dict[str:HeadConfig] = {
                 cfg.name: cfg for cfg in config.output_heads
@@ -57,12 +61,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     del self.heads[name]
                     break
             self._hf_peft_config_loaded = False
-
-        def get_input_embeddings(self):
-            return self.model.embed_tokens
-
-        def set_input_embeddings(self, value):
-            self.model.embed_tokens = value
 
         def save_pretrained(
             self,
@@ -96,12 +94,6 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 if head.requires_individual_saving:
                     head.save_to_safetensors(save_directory)
 
-        def set_decoder(self, decoder):
-            self.model = decoder
-
-        def get_decoder(self):
-            return self.model
-
         def forward(
             self,
             input_ids: torch.LongTensor = None,
@@ -128,7 +120,9 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             )
 
             # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
-            outputs: BaseModelOutputWithPast = self.model(
+            outputs: BaseModelOutputWithPast = getattr(
+                self, model_type_map[self.config.model_type][0], "model"
+            )(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
