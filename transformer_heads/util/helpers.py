@@ -2,6 +2,7 @@ import torch
 from typing import Any, Dict, List, Optional, Tuple, Union
 from torch.nn.utils.rnn import pad_sequence
 from dataclasses import dataclass
+from transformers import MistralForCausalLM, LlamaForCausalLM, GPT2LMHeadModel
 
 
 @dataclass
@@ -48,3 +49,28 @@ class DataCollatorWithPadding:
                     [feature[key].clone().detach() for feature in features]
                 )
         return batch
+
+
+def get_model_params(model_path: str):
+    if "gpt2" in model_path.lower():
+        return {
+            "model_class": GPT2LMHeadModel,
+            "hidden_size": 768,
+            "vocab_size": 50257,
+        }
+    elif "mistral" in model_path.lower():
+        return {
+            "model_class": MistralForCausalLM,
+            "hidden_size": 4096,
+            "vocab_size": 32000,
+        }
+    elif "llama" in model_path.lower():
+        return {
+            "model_class": LlamaForCausalLM,
+            "hidden_size": 4096,
+            "vocab_size": 32000,
+        }
+    else:
+        raise ValueError(
+            "Unknown model type. Find the hidden size and vocab size manually by checking your models config.json."
+        )
