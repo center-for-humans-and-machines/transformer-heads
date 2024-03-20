@@ -63,24 +63,22 @@ def load_headed(
     )
     if freeze_base_model and quantization_config is None:
         for name, param in model.named_parameters():
-            if not "heads" in name:
-                param.requires_grad = False
+            param.requires_grad = False
     if quantization_config is not None and bits < 16:
         if not only_inference:
             model = prepare_model_for_kbit_training(model)
             model._hf_peft_config_loaded = (
                 True  # Nasty hack to avoid hf Trainer assertion error
             )
-
-        head: MLPHead
-        for head in model.heads.values():
-            if head_folder_path is not None:
-                head.load_from_safetensors(head_folder_path)
-            if not only_inference:
-                head.set_requires_grad(True)
-                head.requires_individual_saving = True
         patch_save_pretrained(model, preserve_old=False)
-
+    head: MLPHead
+    for head in model.heads.values():
+        if head_folder_path is not None:
+            head.load_from_safetensors(head_folder_path)
+        if not only_inference:
+            if head.trainable:
+                head.set_requires_grad(True)
+            head.requires_individual_saving = True
     return model
 
 

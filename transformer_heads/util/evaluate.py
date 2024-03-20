@@ -34,6 +34,35 @@ def evaluate_head_wise(
 
 
 @torch.inference_mode()
+def get_some_preds(
+    model,
+    ds,
+    tokenizer,
+    n=5,
+    classification=True,
+):
+    ds = ds.with_format(type="torch")
+    loader = DataLoader(ds, batch_size=1)
+    preds = defaultdict(list)
+    inputs = []
+    ground_truths = defaultdict(list)
+    for i, batch in tqdm(
+        enumerate(loader), total=min(n, len(loader)), desc="Predicting"
+    ):
+        inputs.append(tokenizer.decode(batch["input_ids"].squeeze()))
+        outputs = model(**batch)
+        for key in outputs.preds_by_head:
+            ground_truths[key].append(batch[key])
+            if classification:
+                p = outputs.preds_by_head[key][0, -1, :]
+                p = torch.argmax(p).item()
+            preds[key].append(p)
+        if i >= n:
+            break
+    return inputs, preds, ground_truths
+
+
+@torch.inference_mode()
 def get_top_n_preds(
     n: int,
     model: HeadedModel,
@@ -43,8 +72,8 @@ def get_top_n_preds(
     input = tokenizer(text, return_tensors="pt")
     output = model(**input)
     out = {}
-    for head_name in output.logits_by_head:
-        logits = output.logits_by_head[head_name]
+    for head_name in output.preds_by_head:
+        logits = output.preds_by_head[head_name]
         pred_logits = logits[0, -1, :]
         best_n = torch.topk(pred_logits, n)
         out[head_name] = [tokenizer.decode(i) for i in best_n.indices]
