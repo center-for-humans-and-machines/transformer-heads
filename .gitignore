@@ -5,3 +5,4 @@ adapter_config.json
 head_configs.jons
 **/wandb/**
 **/.ipynb_checkpoints/**
+**/checkpoint-*/**

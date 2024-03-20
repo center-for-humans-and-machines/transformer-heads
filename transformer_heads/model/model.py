@@ -168,6 +168,8 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     else:
                         use_logits = logits
                         use_labels = labels[head_config.name]
+                    if head_config.pred_for_sequence:
+                        use_logits = use_logits[..., -1, :].contiguous()
                     if head_config.is_regression:
                         use_logits = use_logits.view(-1)
                     else:

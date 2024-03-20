@@ -7,16 +7,17 @@ from transformers import PretrainedConfig
 @dataclass
 class HeadConfig(dict):
     name: str
-    layer_hook: int
     in_size: int
-    hidden_size: int
-    num_layers: int
-    output_activation: str
-    is_causal_lm: Optional[bool]
-    loss_fct: Optional[str]
     num_outputs: Optional[int]
-    is_regression: Optional[bool]
+    layer_hook: int = -1
+    hidden_size: int = 0
+    num_layers: int = 1
+    output_activation: str = "linear"
+    is_causal_lm: Optional[bool] = False
+    pred_for_sequence: Optional[bool] = False
+    is_regression: Optional[bool] = False
     output_bias: Optional[bool] = False
+    loss_fct: Optional[str] = "cross_entropy"
 
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
@@ -28,6 +29,9 @@ class HeadConfig(dict):
 
     def __len__(self):
         return len(asdict(self))
+
+    def __post_init__(self):
+        assert not (self.pred_for_sequence and self.is_causal_lm)
 
 
 def create_headed_model_config(base_config_class: Type[PretrainedConfig]):

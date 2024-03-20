@@ -16,7 +16,7 @@ from .model import find_all_linear_names, patch_save_pretrained
 def patch_quantization_config(quantization_config: BitsAndBytesConfig):
     if quantization_config.llm_int8_skip_modules is None:
         quantization_config.llm_int8_skip_modules = []
-    quantization_config.llm_int8_skip_modules.extend(["MLPHead", "heads"])
+    quantization_config.llm_int8_skip_modules.extend(["MLPHead", "heads", "lm_head"])
 
 
 def load_headed(
