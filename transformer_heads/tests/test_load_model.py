@@ -57,9 +57,9 @@ heads = [
 
 
 def check_consistency(outputs1: HeadedModelOutput, outputs2: HeadedModelOutput):
-    for key in outputs1.logits_by_head:
-        logits1 = outputs1.logits_by_head[key]
-        logits2 = outputs2.logits_by_head[key]
+    for key in outputs1.preds_by_head:
+        logits1 = outputs1.preds_by_head[key]
+        logits2 = outputs2.preds_by_head[key]
         print(key)
         probs1 = torch.softmax(logits1[0], dim=-1)
         probs2 = torch.softmax(logits2[0], dim=-1)
@@ -83,7 +83,7 @@ def test_load_model():
 
     tk, inputs = get_test_inputs(model.device)
     outputs: HeadedModelOutput = model(**inputs)
-    logits = outputs.logits_by_head["lm_head"]
+    logits = outputs.preds_by_head["lm_head"]
     next_logits = logits[0, -1, :]
     pred_tk = tk.decode(next_logits.argmax().item())
     print("Model prediction:", pred_tk)
@@ -97,7 +97,7 @@ def test_load_model():
     print("Loaded saved headed Mistral model successfully!")
     inputs.to(model.device)
     new_outputs: HeadedModelOutput = model(**inputs)
-    new_logits = new_outputs.logits_by_head["lm_head"].to(logits.device)
+    new_logits = new_outputs.preds_by_head["lm_head"].to(logits.device)
     new_next_logits = logits[0, -1, :]
     pred_tk = tk.decode(new_next_logits.argmax().item())
     print("Model prediction:", pred_tk)
@@ -167,7 +167,7 @@ def test_qlora():
     tk, inputs = get_test_inputs(model.device)
     print(inputs["input_ids"].dtype)
     outputs: HeadedModelOutput = model(**inputs)
-    logits = outputs.logits_by_head["lm_head"]
+    logits = outputs.preds_by_head["lm_head"]
     next_logits = logits[0, -1, :]
     pred_tk = tk.decode(next_logits.argmax().item())
     print("Model prediction:", pred_tk)
@@ -184,7 +184,7 @@ def test_qlora():
     print("Loaded saved headed qlora Mistral model successfully!")
     print(inputs["input_ids"].dtype)
     new_outputs: HeadedModelOutput = model(**inputs)
-    new_logits = new_outputs.logits_by_head["lm_head"]
+    new_logits = new_outputs.preds_by_head["lm_head"]
     new_next_logits = new_logits[0, -1, :]
     pred_tk = tk.decode(new_next_logits.argmax().item())
     print("Model prediction:", pred_tk)

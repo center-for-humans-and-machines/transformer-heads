@@ -42,4 +42,9 @@ class DataCollatorWithPadding:
                 batch_first=True,
                 padding_value=value,
             )
+        for key in features[0].keys():
+            if key not in self.feature_name_to_padding_value:
+                batch[key] = torch.stack(
+                    [feature[key].clone().detach() for feature in features]
+                )
         return batch

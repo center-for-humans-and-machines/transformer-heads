@@ -21,6 +21,7 @@ class MLPHead(nn.Module):
             head_config.output_activation,
             head_config.num_outputs or 1,
             head_config.output_bias,
+            head_config.trainable,
         )
 
     def __init__(
@@ -32,8 +33,10 @@ class MLPHead(nn.Module):
         output_activation: str,
         num_outputs: int = 1,
         output_bias: bool = False,
+        trainable: bool = True,
     ):
         super().__init__()
+        self.trainable = trainable
         self.name = name
         self.lins = nn.ModuleList()
         if num_layers == 1:
@@ -49,6 +52,7 @@ class MLPHead(nn.Module):
         self.requires_individual_saving = False
 
     def set_requires_grad(self, requires_grad):
+        assert not requires_grad or self.trainable
         for name, param in self.named_parameters():
             param.requires_grad = requires_grad
 

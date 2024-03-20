@@ -18,6 +18,8 @@ class HeadConfig(dict):
     is_regression: Optional[bool] = False
     output_bias: Optional[bool] = False
     loss_fct: Optional[str] = "cross_entropy"
+    trainable: Optional[bool] = True
+    loss_weight: Optional[float] = 1.0
 
     def __hash__(self):
         return hash(tuple(sorted(self.items())))

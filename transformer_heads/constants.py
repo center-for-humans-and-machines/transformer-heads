@@ -4,6 +4,7 @@ from transformers import MistralModel, GPT2Model
 loss_fct_map = {
     "mse": nn.MSELoss(),
     "cross_entropy": nn.CrossEntropyLoss(),
+    "bce": nn.BCELoss(),
 }
 
 model_type_map = {
