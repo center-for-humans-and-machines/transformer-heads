@@ -9,7 +9,7 @@ from transformer_heads.output import HeadedModelOutput
 from transformer_heads.util.load_model import (
     create_headed_qlora,
     load_headed,
-    load_qlora_with_heads,
+    load_lora_with_heads,
 )
 from transformer_heads.util.model import print_trainable_parameters
 
@@ -174,7 +174,7 @@ def test_qlora():
     model.save_pretrained("mistral_headed_qlora")
     print("Saved headed qlora Mistral model successfully!")
     del model
-    model = load_qlora_with_heads(
+    model = load_lora_with_heads(
         MistralForCausalLM,
         "mistral_headed_qlora",
         quantization_config,

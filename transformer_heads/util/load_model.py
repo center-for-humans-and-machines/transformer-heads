@@ -82,10 +82,10 @@ def load_headed(
     return model
 
 
-def load_qlora_with_heads(
+def load_lora_with_heads(
     base_model_class: Type[PreTrainedModel],
     path: str,
-    quantization_config: BitsAndBytesConfig,
+    quantization_config: BitsAndBytesConfig = None,
     only_inference: bool = False,
     fully_trained_heads: bool = True,
     device_map="auto",
@@ -93,7 +93,15 @@ def load_qlora_with_heads(
     gradient_checkpointing: bool = False,
     **kwargs,
 ):
-    patch_quantization_config(quantization_config)
+    if quantization_config is None:
+        bits = 32
+    else:
+        patch_quantization_config(quantization_config)
+        bits = (
+            4
+            if quantization_config.load_in_4bit
+            else 8 if quantization_config.load_in_8bit else 32
+        )
     adapt_config_path = os.path.join(path, "adapter_config.json")
     with open(adapt_config_path, "r") as f:
         base_model_path = json.load(f)["base_model_name_or_path"]
@@ -110,8 +118,8 @@ def load_qlora_with_heads(
     model = get_multi_head_transformer(base_model_class)
     model: HeadedModel = model.from_pretrained(
         base_model_path,
-        load_in_4bit=quantization_config.load_in_4bit,
-        load_in_8bit=quantization_config.load_in_8bit,
+        load_in_4bit=bits == 4,
+        load_in_8bit=bits == 8,
         config=config,
         device_map=device_map,
         quantization_config=quantization_config,

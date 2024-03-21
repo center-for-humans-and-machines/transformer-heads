@@ -14,4 +14,8 @@
 # Wall clock limit (max is 24 hours):
 #SBATCH --time=23:00:00
 
+module load anaconda/3/2021.11
+source ~/.condasetup_bash
+conda activate sh_finetuning
+
 srun bash -c scripts/paper_shredder.sh
