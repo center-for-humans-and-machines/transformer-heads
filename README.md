@@ -1,8 +1,8 @@
 # Transformer Heads
-This library aims to be an alround toolkit for attaching, training, saving and loading of new heads for transformer models.  
+This library aims to be an allround toolkit for attaching, training, saving and loading of new heads for transformer models.  
 A new head could be: 
 * A [linear probe](https://arxiv.org/pdf/1610.01644.pdf) used to get an understanding of the information processing in a transformer architecture
-* A new head to be finetuned with the weight of a pretrained transformer model to perform a completely different kind of task.
+* A head to be finetuned jointly with the weights of a pretrained transformer model to perform a completely different kind of task.
     - E.g. a transformer pretrained to do causal language modelling could get a sequence classification head attached and be finetuned to do sentiment classification.
     - Or one could attach a regression head to turn a large language model into a value function for a reinforcement learning problem.
 
