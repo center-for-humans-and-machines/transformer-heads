@@ -52,9 +52,9 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
     - Train many probes for causal LM at once: [notebooks/gpt/multi_linear_probe.ipynb](notebooks/gpt/multi_linear_probe.ipynb)
     - Train many probes for text classification once: [notebooks/gpt/text_classification_linear_probe.ipynb](notebooks/gpt/text_classification_linear_probe.ipynb)
 * Finetuning on a new type of task (with a new head)
-    - Qlora: [notebooks/gpt/text_classification_qlora.ipynb](notebooks/gpt/text_classification_qlora.ipynb)
+    - QLoRA: [notebooks/gpt/text_classification_qlora.ipynb](notebooks/gpt/text_classification_qlora.ipynb)
     - Full finetuning: [notebooks/gpt/text_classification_full_finetune.ipynb](notebooks/gpt/text_classification_full_finetune.ipynb)
 * Joint multi-task learning
-    - Many heads doing completely different tasks + Qlora, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
+    - Many heads doing completely different tasks + QLoRA, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
 * Regression with pretrained transformers
     - Check the regression heads of this notebook: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
