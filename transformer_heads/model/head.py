@@ -1,3 +1,11 @@
+"""
+This module defines a class `MLPHead` that represents a multi-layer perceptron (MLP) head for a transformer model. 
+It also includes utility functions for saving and loading the state of the MLP head.
+
+Classes:
+    MLPHead: A class that represents a multi-layer perceptron (MLP) head for a transformer model.
+"""
+
 import os
 
 import torch
@@ -6,23 +14,28 @@ from safetensors.torch import load_file, save_file
 
 from transformer_heads.config import HeadConfig
 from transformer_heads.util.model import patch_state_dict
-
-activation_map = {"sigmoid": nn.Sigmoid, "linear": nn.Identity, "relu": nn.ReLU}
+from transformer_heads.constants import activation_map
 
 
 class MLPHead(nn.Module):
-    @classmethod
-    def from_head_config(cls, head_config: HeadConfig):
-        return cls(
-            head_config.name,
-            head_config.in_size,
-            head_config.hidden_size,
-            head_config.num_layers,
-            head_config.output_activation,
-            head_config.num_outputs or 1,
-            head_config.output_bias,
-            head_config.trainable,
-        )
+    """
+    A class that represents a multi-layer perceptron (MLP) head for a transformer model.
+
+    Attributes:
+        name (str): The name of the MLP head.
+        trainable (bool): Whether the MLP head is trainable.
+        lins (nn.ModuleList): A list of linear layers in the MLP head.
+        hidden_activation (nn.ReLU): The activation function for the hidden layers.
+        output_activation (nn.Module): The activation function for the output layer.
+        requires_individual_saving (bool): Whether the MLP head needs to be saved separately.
+
+    Methods:
+        from_head_config(cls, head_config: HeadConfig): Creates an MLP head from a head configuration.
+        set_requires_grad(self, requires_grad): Sets whether the parameters of the MLP head require gradients.
+        save_to_safetensors(self, folder): Saves the state of the MLP head to a file.
+        load_from_safetensors(self, folder): Loads the state of the MLP head from a file.
+        forward(self, x) -> torch.FloatTensor: Performs a forward pass through the MLP head.
+    """
 
     def __init__(
         self,
@@ -36,8 +49,8 @@ class MLPHead(nn.Module):
         trainable: bool = True,
     ):
         super().__init__()
-        self.trainable = trainable
         self.name = name
+        self.trainable = trainable
         self.lins = nn.ModuleList()
         if num_layers == 1:
             self.lins.append(nn.Linear(in_size, num_outputs, bias=output_bias))
@@ -51,15 +64,55 @@ class MLPHead(nn.Module):
         self.output_activation = activation_map[output_activation]()
         self.requires_individual_saving = False
 
+    @classmethod
+    def from_head_config(cls, head_config: HeadConfig) -> "MLPHead":
+        """
+        Creates an MLP head from a head configuration.
+
+        Args:
+            head_config (HeadConfig): The head configuration.
+
+        Returns:
+            MLPHead: The created MLP head.
+        """
+        return cls(
+            head_config.name,
+            head_config.in_size,
+            head_config.hidden_size,
+            head_config.num_layers,
+            head_config.output_activation,
+            head_config.num_outputs or 1,
+            head_config.output_bias,
+            head_config.trainable,
+        )
+
     def set_requires_grad(self, requires_grad):
+        """
+        Sets whether the parameters of the MLP head require gradients.
+
+        Args:
+            requires_grad (bool): Whether the parameters require gradients.
+        """
         assert not requires_grad or self.trainable
         for name, param in self.named_parameters():
             param.requires_grad = requires_grad
 
     def save_to_safetensors(self, folder):
+        """
+        Saves the state of the MLP head to a safetensors file.
+
+        Args:
+            folder (str): The folder where the file will be saved.
+        """
         save_file(self.state_dict(), os.path.join(folder, self.name + ".safetensors"))
 
     def load_from_safetensors(self, folder):
+        """
+        Loads the state of the MLP head from a safetensors file.
+
+        Args:
+            folder (str): The folder where the file is located.
+        """
         self.load_state_dict(
             patch_state_dict(
                 load_file(os.path.join(folder, self.name + ".safetensors"))
@@ -67,6 +120,15 @@ class MLPHead(nn.Module):
         )
 
     def forward(self, x) -> torch.FloatTensor:
+        """
+        Performs a forward pass through the MLP head.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.FloatTensor: The output tensor.
+        """
         for i, lin in enumerate(self.lins):
             x = lin(x)
             if i < len(self.lins) - 1:

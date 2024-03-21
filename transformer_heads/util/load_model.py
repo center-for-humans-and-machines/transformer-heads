@@ -1,3 +1,17 @@
+"""
+This module provides functions for loading and creating transformer models with additional heads.
+
+Functions:
+    patch_quantization_config: Modifies the quantization configuration to skip head modules during the quantization process.
+    load_headed: Loads a transformer model with additional heads.
+    load_lora_with_heads: Loads a LoRA (Low Rank Adaptation) transformer model with additional heads.
+    create_headed_qlora: Creates a quantized LoRA (Low Rank Adaptation) transformer model with additional heads.
+
+These functions are used to load and create transformer models with additional heads,
+which can be useful for tasks such as multi-task learning or linear probes.
+The models can be loaded with or without quantization, and with or without LoRA (Low Rank Adaptation).
+"""
+
 import json
 import os
 from typing import Type
@@ -14,6 +28,12 @@ from .model import find_all_linear_names, patch_save_pretrained
 
 
 def patch_quantization_config(quantization_config: BitsAndBytesConfig):
+    """
+    Modifies the quantization configuration to skip head modules during the quantization process.
+
+    Args:
+        quantization_config (BitsAndBytesConfig): The quantization configuration to modify.
+    """
     if quantization_config.llm_int8_skip_modules is None:
         quantization_config.llm_int8_skip_modules = []
     quantization_config.llm_int8_skip_modules.extend(["MLPHead", "heads", "lm_head"])
@@ -30,6 +50,20 @@ def load_headed(
     freeze_base_model: bool = True,
     **kwargs,
 ):
+    """
+    Loads a transformer model with additional heads.
+
+    Args:
+        base_model_class (Type[PreTrainedModel]): The class of the base transformer model.
+        model_name (str): The huggingface name of the model to load.
+        head_configs (list, optional): A list of head configurations.
+        head_folder_path (str, optional): The path to the folder containing the saved heads and head configurations.
+        only_inference (bool, optional): Whether to load the model for inference only.
+        device_map (str, optional): The device map to use when loading the model.
+        quantization_config (BitsAndBytesConfig, optional): The quantization configuration to use when loading the model.
+        freeze_base_model (bool, optional): Whether to freeze the base model during training.
+        **kwargs: Additional keyword arguments to pass to from_pretrained.
+    """
     assert head_configs is not None or head_folder_path is not None
     assert head_configs is None or head_folder_path is None
     assert (
@@ -93,6 +127,21 @@ def load_lora_with_heads(
     gradient_checkpointing: bool = False,
     **kwargs,
 ):
+    """
+    Loads a LoRA (Low Rank Adaptation) transformer model with additional heads.
+
+    Args:
+        base_model_class (Type[PreTrainedModel]): The class of the base transformer model.
+        path (str): The path (saved or huggingface) to the model to load.
+        quantization_config (BitsAndBytesConfig, optional): The quantization configuration to use when loading the model.
+        only_inference (bool, optional): Whether to load the model for inference only.
+        fully_trained_heads (bool, optional): Whether to fully train all the heads.
+        device_map (str, optional): The device map to use when loading the model.
+        torch_dtype (torch.dtype, optional): The torch processing data type for the model.
+        gradient_checkpointing (bool, optional): Whether to prepare the model for gradient checkpointing.
+        **kwargs: Additional keyword arguments to pass to from_pretrained.
+    """
+
     if quantization_config is None:
         bits = 32
     else:
@@ -158,6 +207,20 @@ def create_headed_qlora(
     gradient_checkpointing: bool = False,
     **kwargs,
 ):
+    """
+    Creates a quantized LoRA (Low Rank Adaptation) transformer model with additional heads.
+
+    Args:
+        base_model_class (Type[PreTrainedModel]): The class of the base transformer model.
+        model_name (str): The name of the pretrained base model (e.g. it's huggingface name).
+        quantization_config (BitsAndBytesConfig): The quantization configuration to use when creating the model.
+        lora_config (LoraConfig): The LoRA configuration to adapt the model with.
+        head_configs (list[HeadConfig]): A list of head configurations.
+        fully_trained_heads (bool, optional): Whether the heads should be fully trained.
+        device_map (str, optional): The device map to use when creating the model.
+        gradient_checkpointing (bool, optional): Whether to prepare the model for gradient checkpointing.
+        **kwargs: Additional keyword arguments to pass to from_pretrained.
+    """
     patch_quantization_config(quantization_config)
     bits = (
         4

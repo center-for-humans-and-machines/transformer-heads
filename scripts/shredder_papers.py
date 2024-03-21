@@ -1,5 +1,6 @@
-import papermill as pm
 import os
+
+import papermill as pm
 
 
 def shredder_papers(models, base_path="notebooks/base", out_path="notebooks"):

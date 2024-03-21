@@ -18,4 +18,4 @@ module load anaconda/3/2021.11
 source ~/.condasetup_bash
 conda activate sh_finetuning
 
-srun bash -c scripts/paper_shredder.sh
+srun bash -c scripts/paper_shredder.bash

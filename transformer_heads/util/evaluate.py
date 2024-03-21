@@ -1,18 +1,48 @@
-from transformer_heads.model.model import HeadedModel
-from transformer_heads.output import HeadedModelOutput
-from transformers import PreTrainedTokenizer
+"""
+This module contains functions for evaluating a HeadedModel, a type of model that has multiple "heads" for different tasks.
+It provides functions to compute the model loss for each of its heads, get predictions from the model, and get the top n predictions for a given text.
+
+Functions:
+    evaluate_head_wise(model: HeadedModel, ds: Dataset, collator=None, batch_size=8, epochs=1) -> tuple[int, dict[str, int]]:
+        Compute the model loss for each of its heads.
+
+    get_some_preds(model, ds, tokenizer, n=5, classification=True) -> tuple[list[str], dict[str, list[int]], dict[str, list[int]]]:
+        Get predictions from the model.
+
+    get_top_n_preds(n: int, model: HeadedModel, text: str, tokenizer: PreTrainedTokenizer):
+        Get the top n predictions for a given text. Use for models with causal language modeling heads.
+"""
+
+from collections import defaultdict
+
+import numpy as np
+import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
-from collections import defaultdict
-import torch
-import numpy as np
 from tqdm import tqdm
+from transformers import PreTrainedTokenizer
+
+from transformer_heads.model.model import HeadedModel
+from transformer_heads.output import HeadedModelOutput
 
 
 @torch.inference_mode()
 def evaluate_head_wise(
     model: HeadedModel, ds: Dataset, collator=None, batch_size=8, epochs=1
-):
+) -> tuple[int, dict[str, int]]:
+    """
+    Compute the model loss for each of its heads.
+
+    Args:
+        model (HeadedModel): The model to be evaluated.
+        ds (Dataset): The dataset to be used for evaluation.
+        collator (callable, optional): Merges a list of samples to form a mini-batch.
+        batch_size (int, optional): The size of each batch. Defaults to 8.
+        epochs (int, optional): The number of epochs for evaluation. Defaults to 1.
+
+    Returns:
+        tuple[int, dict[str, int]]: The overall loss and the losses by each head.
+    """
     ds = ds.with_format(type="torch")
     loader = DataLoader(ds, batch_size=batch_size, collate_fn=collator)
     losses_by_head = defaultdict(list)
@@ -40,7 +70,20 @@ def get_some_preds(
     tokenizer,
     n=5,
     classification=True,
-):
+) -> tuple[list[str], dict[str, list[int]], dict[str, list[int]]]:
+    """
+    Get predictions from the model.
+
+    Args:
+        model (HeadedModel): The model to be used for prediction.
+        ds (Dataset): The dataset to be used for prediction.
+        tokenizer (PreTrainedTokenizer): The tokenizer to be used.
+        n (int, optional): The number of predictions to get (From the beginning of the datset). Defaults to 5.
+        classification (bool, optional): Whether the task is text classification. Defaults to True.
+
+    Returns:
+        tuple[list[str], dict[str, list[int]], dict[str, list[int]]]: The inputs, predictions, and ground truths.
+    """
     ds = ds.with_format(type="torch")
     loader = DataLoader(ds, batch_size=1)
     preds = defaultdict(list)
@@ -69,6 +112,18 @@ def get_top_n_preds(
     text: str,
     tokenizer: PreTrainedTokenizer,
 ):
+    """
+    Get the top n predictions for a given text. Use for models with causal language modeling heads.
+
+    Args:
+        n (int): The number of top predictions to get.
+        model (HeadedModel): The model to be used for prediction.
+        text (str): The input text to be used for prediction.
+        tokenizer (PreTrainedTokenizer): The tokenizer to be used.
+
+    Returns:
+        dict[str, list[str]]: The top n predictions for each head.
+    """
     input = tokenizer(text, return_tensors="pt")
     output = model(**input)
     out = {}
