@@ -2,12 +2,12 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="208.02924mm"
-   height="167.51878mm"
-   viewBox="0 0 208.02924 167.51878"
+   width="208.17181mm"
+   height="140.94493mm"
+   viewBox="0 0 208.17182 140.94493"
    version="1.1"
    id="svg1"
-   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
    sodipodi:docname="multi_linear_probe.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -25,11 +25,11 @@
      inkscape:document-units="mm"
      inkscape:zoom="0.68791667"
      inkscape:cx="265.29376"
-     inkscape:cy="317.62568"
-     inkscape:window-width="1876"
-     inkscape:window-height="992"
-     inkscape:window-x="20"
-     inkscape:window-y="64"
+     inkscape:cy="218.7765"
+     inkscape:window-width="1920"
+     inkscape:window-height="1147"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1" />
   <defs
@@ -539,7 +539,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-41.930043,-18.193133)">
+     transform="translate(-41.930043,-44.766986)">
     <g
        id="g20"
        transform="translate(5.7212478,32.640897)">
@@ -1384,16 +1384,5 @@
          id="path8-4-5-9-1-4-8-1-9-4-0-7-4-6-1"
          sodipodi:nodetypes="cc" />
     </g>
-    <text
-       xml:space="preserve"
-       style="font-size:11.2889px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:start;text-anchor:start;fill:#ff9bda;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1"
-       x="46.027832"
-       y="26.829142"
-       id="text21"><tspan
-         sodipodi:role="line"
-         id="tspan21"
-         style="font-size:11.2889px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1"
-         x="46.027832"
-         y="26.829142">Joint training of multiple linear probes</tspan></text>
   </g>
 </svg>

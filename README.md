@@ -8,6 +8,7 @@ A new head could be:
 
 On top of that, attaching multiple heads at once can make multi-task learning easy, making it possible to train very general models.
 
+
 ## Installation
 From the root of this repository:
 `pip install -e .`
@@ -45,7 +46,10 @@ trainer = Trainer(
 
 For a more in-depth introduction and a fully working example, check the [linear probe notebook](notebooks/gpt/linear_probe.ipynb).
 
-# Notebooks
+## Joint training of multiple linear probes
+![images/multi_linear_probe.svg](images/multi_linear_probe.svg)
+
+## Notebooks
 This repository contains multiple jupyter notebooks for a tutorial/illustration of how do do certain things with this library. Here is an overview of which notebook you should check out depending on the use you are interested in.
 * Linear Probes (understanding the inner workings of transformers)
     - Basic example with one probe for causal LM: [notebooks/gpt/linear_probe.ipynb](notebooks/gpt/linear_probe.ipynb)
@@ -58,3 +62,6 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
     - Many heads doing completely different tasks + QLoRA, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
 * Regression with pretrained transformers
     - Check the regression heads of this notebook: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
+
+## Joint multi-task training with different types of heads and QLoRA.
+![images/example_architecture.svg](images/example_architecture.svg)
