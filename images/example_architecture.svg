@@ -24,8 +24,8 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="0.68791667"
-     inkscape:cx="572.01696"
-     inkscape:cy="480.4361"
+     inkscape:cx="438.27983"
+     inkscape:cy="859.84252"
      inkscape:window-width="1876"
      inkscape:window-height="992"
      inkscape:window-x="20"
@@ -619,10 +619,10 @@
          xml:space="preserve"
          transform="matrix(0.26458333,0,0,0.26458333,38.308295,59.968504)"
          id="text6"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:26.6667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;white-space:pre;shape-inside:url(#rect6);fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.10079;stroke-dasharray:none;stroke-dashoffset:0"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:26.6667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;white-space:pre;shape-inside:url(#rect6);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.10079;stroke-dasharray:none;stroke-dashoffset:0"><tspan
            x="382.80498"
            y="851.30243"
-           id="tspan7">Input</tspan></text>
+           id="tspan8">Input</tspan></text>
       <rect
          style="fill:#b7a5a5;fill-opacity:1;stroke:#000000;stroke-width:0.712119;stroke-dasharray:none;stroke-dashoffset:0"
          id="rect1-7-7"
@@ -1356,15 +1356,48 @@
        xml:space="preserve"
        transform="scale(0.26458333)"
        id="text3"
-       style="font-size:42.6667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;white-space:pre;shape-inside:url(#rect3);fill:#000000;stroke-width:3.77953"
+       style="font-size:42.6667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;white-space:pre;shape-inside:url(#rect3);display:inline;fill:#000000;stroke-width:3.77953"
        x="485.56821"
        y="0"><tspan
          x="60.192182"
          y="53.561604"
-         id="tspan8">Hooking multiple heads for multi-task finetuning
+         id="tspan9">Hooking multiple heads for multi-task finetuning
 </tspan><tspan
          x="205.68562"
          y="106.89498"
-         id="tspan9">of pretrained transformer models.</tspan></text>
+         id="tspan14">of pretrained transformer models.</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;text-anchor:middle;fill:#000000;stroke-width:1"
+       x="143.71513"
+       y="139.66362"
+       id="text7"><tspan
+         sodipodi:role="line"
+         id="tspan7"
+         style="font-size:7.05556px;stroke-width:1"
+         x="143.71513"
+         y="139.66362">+</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;text-anchor:middle;fill:#000000;stroke-width:1"
+       x="142.14055"
+       y="189.91481"
+       id="text7-4"><tspan
+         sodipodi:role="line"
+         id="tspan7-5"
+         style="font-size:7.05556px;stroke-width:1"
+         x="142.14055"
+         y="189.91481">+</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:center;text-anchor:middle;fill:#000000;stroke-width:1"
+       x="142.77014"
+       y="239.16257"
+       id="text7-0"><tspan
+         sodipodi:role="line"
+         id="tspan7-9"
+         style="font-size:7.05556px;stroke-width:1"
+         x="142.77014"
+         y="239.16257">+</tspan></text>
   </g>
 </svg>
