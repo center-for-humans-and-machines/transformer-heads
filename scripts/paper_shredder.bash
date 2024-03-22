@@ -1,7 +1,7 @@
 #!/bin/bash
-train_epochs = 0.1
-eval_epochs = 0.1
-logging_steps = 40
+train_epochs=0.1
+eval_epochs=0.1
+logging_steps=40
 
 mkdir notebooks/gpt2
 papermill notebooks/base/linear_probe.ipynb notebooks/gpt2/linear_probe.ipynb -p model_path gpt2 -p train_epochs $train_epochs -p eval_epochs $eval_epochs -p logging_steps $logging_steps -k sh_finetune 
