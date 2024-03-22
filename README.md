@@ -1,6 +1,12 @@
 # Transformer Heads
-This library aims to be an alround toolkit for attaching, training, saving and loading of new heads for transformer models. A new head could be a [linear probe](https://arxiv.org/pdf/1610.01644.pdf) used to get an understanding of the information processing in a transformer architecture, or a new head can be used to finetune a transformer model to perform a completely different kind of task. For example, a transformer pretrained to do causal language modelling could get a sequence classification head attached and be finetuned to do sentiment classification. Or one could attach a regression head to turn a large language model into a value function for a reinforcement learning problem.  
-On top of that, attaching multiple heads can make multi-task learning easy, making it possible to train very general models.
+This library aims to be an allround toolkit for attaching, training, saving and loading of new heads for transformer models.  
+A new head could be: 
+* A [linear probe](https://arxiv.org/pdf/1610.01644.pdf) used to get an understanding of the information processing in a transformer architecture
+* A head to be finetuned jointly with the weights of a pretrained transformer model to perform a completely different kind of task.
+    - E.g. a transformer pretrained to do causal language modelling could get a sequence classification head attached and be finetuned to do sentiment classification.
+    - Or one could attach a regression head to turn a large language model into a value function for a reinforcement learning problem.
+
+On top of that, attaching multiple heads at once can make multi-task learning easy, making it possible to train very general models.
 
 ## Installation
 From the root of this repository:
@@ -46,9 +52,9 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
     - Train many probes for causal LM at once: [notebooks/gpt/multi_linear_probe.ipynb](notebooks/gpt/multi_linear_probe.ipynb)
     - Train many probes for text classification once: [notebooks/gpt/text_classification_linear_probe.ipynb](notebooks/gpt/text_classification_linear_probe.ipynb)
 * Finetuning on a new type of task (with a new head)
-    - Qlora: [notebooks/gpt/text_classification_qlora.ipynb](notebooks/gpt/text_classification_qlora.ipynb)
+    - QLoRA: [notebooks/gpt/text_classification_qlora.ipynb](notebooks/gpt/text_classification_qlora.ipynb)
     - Full finetuning: [notebooks/gpt/text_classification_full_finetune.ipynb](notebooks/gpt/text_classification_full_finetune.ipynb)
 * Joint multi-task learning
-    - Many heads doing completely different tasks + Qlora, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
+    - Many heads doing completely different tasks + QLoRA, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
 * Regression with pretrained transformers
     - Check the regression heads of this notebook: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
