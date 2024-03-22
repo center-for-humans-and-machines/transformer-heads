@@ -94,7 +94,7 @@ class MLPHead(nn.Module):
             requires_grad (bool): Whether the parameters require gradients.
         """
         assert not requires_grad or self.trainable
-        for name, param in self.named_parameters():
+        for _name, param in self.named_parameters():
             param.requires_grad = requires_grad
 
     def save_to_safetensors(self, folder):
