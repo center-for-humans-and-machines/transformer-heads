@@ -19,6 +19,8 @@ from typing import Type
 import torch
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import BitsAndBytesConfig, PretrainedConfig, PreTrainedModel
+from transformers.modeling_utils import logger as hf_logger
+from logging import ERROR
 
 from transformer_heads.config import HeadConfig, create_headed_model_config
 from transformer_heads.model.head import MLPHead
@@ -96,7 +98,7 @@ def load_headed(
         **kwargs,
     )
     if freeze_base_model and quantization_config is None:
-        for name, param in model.named_parameters():
+        for _name, param in model.named_parameters():
             param.requires_grad = False
     if quantization_config is not None and bits < 16:
         if not only_inference:
@@ -132,7 +134,7 @@ def load_lora_with_heads(
 
     Args:
         base_model_class (Type[PreTrainedModel]): The class of the base transformer model.
-        path (str): The path (saved or huggingface) to the model to load.
+        path (str): The path (saved or huggingface) to the headed model to load.
         quantization_config (BitsAndBytesConfig, optional): The quantization configuration to use when loading the model.
         only_inference (bool, optional): Whether to load the model for inference only.
         fully_trained_heads (bool, optional): Whether to fully train all the heads.
@@ -165,6 +167,8 @@ def load_lora_with_heads(
     config = headed_config_class.from_base_class(base_model_config, head_configs)
 
     model = get_multi_head_transformer(base_model_class)
+    before_level = hf_logger.level
+    hf_logger.setLevel(ERROR)  # Avoid confusing warning.
     model: HeadedModel = model.from_pretrained(
         base_model_path,
         load_in_4bit=bits == 4,
@@ -175,6 +179,7 @@ def load_lora_with_heads(
         torch_dtype=torch_dtype,
         **kwargs,
     )
+    hf_logger.setLevel(before_level)
 
     if not only_inference:
         model: HeadedModel = prepare_model_for_kbit_training(
