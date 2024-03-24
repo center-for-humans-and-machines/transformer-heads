@@ -95,10 +95,12 @@ def get_some_preds(
         inputs.append(tokenizer.decode(batch["input_ids"].squeeze()))
         outputs = model(**batch)
         for key in outputs.preds_by_head:
-            ground_truths[key].append(batch[key])
             if classification:
                 p = outputs.preds_by_head[key][0, -1, :]
                 p = torch.argmax(p).item()
+                ground_truths[key].append(int(batch[key][0].item()))
+            else:
+                ground_truths[key].append(batch[key])
             preds[key].append(p)
         if i >= n:
             break

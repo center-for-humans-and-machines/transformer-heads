@@ -44,7 +44,7 @@ trainer = Trainer(
 )
 ```
 
-For a more in-depth introduction and a fully working example, check the [linear probe notebook](notebooks/gpt/linear_probe.ipynb).
+For a more in-depth introduction and a fully working example, check the [linear probe notebook](notebooks/gpt2/linear_probe.ipynb).
 
 ## Joint training of multiple linear probes
 ![images/multi_linear_probe.svg](images/multi_linear_probe.svg)
@@ -52,16 +52,19 @@ For a more in-depth introduction and a fully working example, check the [linear 
 ## Notebooks
 This repository contains multiple jupyter notebooks for a tutorial/illustration of how do do certain things with this library. Here is an overview of which notebook you should check out depending on the use you are interested in.
 * Linear Probes (understanding the inner workings of transformers)
-    - Basic example with one probe for causal LM: [notebooks/gpt/linear_probe.ipynb](notebooks/gpt/linear_probe.ipynb)
-    - Train many probes for causal LM at once: [notebooks/gpt/multi_linear_probe.ipynb](notebooks/gpt/multi_linear_probe.ipynb)
-    - Train many probes for text classification once: [notebooks/gpt/text_classification_linear_probe.ipynb](notebooks/gpt/text_classification_linear_probe.ipynb)
+    - Basic example with one probe for causal LM: [notebooks/gpt2/linear_probe.ipynb](notebooks/gpt2/linear_probe.ipynb)
+    - Train many probes for causal LM at once: [notebooks/gpt2/multi_linear_probe.ipynb](notebooks/gpt2/multi_linear_probe.ipynb)
+    - Train many probes for text classification once: [notebooks/gpt2/text_classification_linear_probe.ipynb](notebooks/gpt2/text_classification_linear_probe.ipynb)
 * Finetuning on a new type of task (with a new head)
-    - QLoRA: [notebooks/gpt/text_classification_qlora.ipynb](notebooks/gpt/text_classification_qlora.ipynb)
-    - Full finetuning: [notebooks/gpt/text_classification_full_finetune.ipynb](notebooks/gpt/text_classification_full_finetune.ipynb)
+    - QLoRA: [notebooks/gpt2/text_classification_qlora.ipynb](notebooks/gpt2/text_classification_qlora.ipynb)
+    - Full finetuning: [notebooks/gpt2/text_classification_full_finetune.ipynb](notebooks/gpt2/text_classification_full_finetune.ipynb)
 * Joint multi-task learning
-    - Many heads doing completely different tasks + QLoRA, all trained at the same time: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
+    - Many heads doing completely different tasks + QLoRA, all trained at the same time: [notebooks/gpt2/joint_multitask_learning.ipynb](notebooks/gpt2/joint_multitask_learning.ipynb)
 * Regression with pretrained transformers
-    - Check the regression heads of this notebook: [notebooks/gpt/joint_multitask_learning.ipynb](notebooks/gpt/joint_multitask_learning.ipynb)
+    - Check the regression heads of this notebook: [notebooks/gpt2/joint_multitask_learning.ipynb](notebooks/gpt2/joint_multitask_learning.ipynb)
+* Saving and loading
+    - Notebook: [notebooks/gpt2/saving_and_loading.ipynb](notebooks/gpt2/saving_and_loading.ipynb)
+    - Tests: [transformer_heads/tests/test_load_model.py](transformer_heads/tests/test_load_model.py)
 
 ## Joint multi-task training with different types of heads and QLoRA.
 ![images/example_architecture.svg](images/example_architecture.svg)
