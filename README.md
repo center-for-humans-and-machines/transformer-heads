@@ -8,7 +8,7 @@ A new head could be:
 
 On top of that, attaching multiple heads at once can make multi-task learning easy, making it possible to train very general models.
 
-Check out the api [documentation at ReadtheDocs](https://transformer-heads.readthedocs.io/en/latest/).
+Check out the api [documentation at Read the Docs](https://transformer-heads.readthedocs.io/en/latest/).
 
 
 ## Installation
