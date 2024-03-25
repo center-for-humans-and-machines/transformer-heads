@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to transformer-heads's documentation!
+Api documentation for transformer-heads
 =============================================
 
 .. toctree::
@@ -12,6 +12,7 @@ Welcome to transformer-heads's documentation!
 
    readme
    images
+   transformer-heads
 
 
 Indices and tables
