@@ -28,13 +28,6 @@ class MLPHead(nn.Module):
         hidden_activation (nn.ReLU): The activation function for the hidden layers.
         output_activation (nn.Module): The activation function for the output layer.
         requires_individual_saving (bool): Whether the MLP head needs to be saved separately.
-
-    Methods:
-        from_head_config(cls, head_config: HeadConfig): Creates an MLP head from a head configuration.
-        set_requires_grad(self, requires_grad): Sets whether the parameters of the MLP head require gradients.
-        save_to_safetensors(self, folder): Saves the state of the MLP head to a file.
-        load_from_safetensors(self, folder): Loads the state of the MLP head from a file.
-        forward(self, x) -> torch.FloatTensor: Performs a forward pass through the MLP head.
     """
 
     def __init__(

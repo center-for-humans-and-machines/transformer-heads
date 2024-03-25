@@ -6,3 +6,4 @@ head_configs.jons
 **/wandb/**
 **/.ipynb_checkpoints/**
 **/checkpoint-*/**
+**/build/**

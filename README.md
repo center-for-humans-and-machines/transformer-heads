@@ -10,7 +10,9 @@ On top of that, attaching multiple heads at once can make multi-task learning ea
 
 
 ## Installation
-From the root of this repository:
+Install from pypi: `pip install transformer-heads`.
+
+Or, clone this repo and from the root of this repository:
 `pip install -e .`
 
 ## Usage
@@ -47,7 +49,7 @@ trainer = Trainer(
 For a more in-depth introduction and a fully working example, check the [linear probe notebook](notebooks/gpt2/linear_probe.ipynb).
 
 ## Joint training of multiple linear probes
-![images/multi_linear_probe.svg](images/multi_linear_probe.svg)
+![_images/multi_linear_probe.svg](_images/multi_linear_probe.svg)
 
 ## Notebooks
 This repository contains multiple jupyter notebooks for a tutorial/illustration of how do do certain things with this library. Here is an overview of which notebook you should check out depending on the use you are interested in.
@@ -67,4 +69,4 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
     - Tests: [transformer_heads/tests/test_load_model.py](transformer_heads/tests/test_load_model.py)
 
 ## Joint multi-task training with different types of heads and QLoRA.
-![images/example_architecture.svg](images/example_architecture.svg)
+![_images/example_architecture.svg](_images/example_architecture.svg)
