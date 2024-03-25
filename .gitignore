@@ -7,6 +7,5 @@ head_configs.jons
 **/.ipynb_checkpoints/**
 **/checkpoint-*/**
 **/build/**
-**/llama/**
 **/mistral/**
 **/base/**
