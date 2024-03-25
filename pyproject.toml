@@ -21,4 +21,4 @@ readme = "README.md"
 license = {text = "MIT License"}
 keywords = ["Transformer", "Qlora", "Linear Probe"]
 [tool.hatch.version]
-path = "transformer_heads/version.py"
+path = "transformer_heads/__init__.py"

@@ -1,6 +1,7 @@
 name: Publish to PyPI
 run-name: ${{ github.actor }} is publishing to PyPI
-on: [push]
+on:
+  workflow_dispatch:
 jobs:
   pypi-publish:
     name: upload release to PyPI
