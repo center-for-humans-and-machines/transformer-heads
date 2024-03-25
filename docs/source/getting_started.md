@@ -1,7 +1,7 @@
 ## Getting Started
 After you installed the library `pip install transformer-heads`, the jupyter notebooks in this repository will act as a tutorial to get you started with *transformer-heads*.
 
-To start of, I recommend you to check the [linear probe notebook](../../notebooks/gpt2/linear_probe.ipynb). In this one, you will learn to train a single new linear head while keeping the base model frozen.
+To start off, I recommend you to check the [linear probe notebook](../../notebooks/gpt2/linear_probe.ipynb). In this one, you will learn to train a single new linear head while keeping the base model frozen.
 
 If you are interested in linear probes, you should now follow up with the [multi linear probe notebook](../../notebooks/gpt2/multi_linear_probe.ipynb) and with the [text classification linear probe notebook](../../notebooks/gpt2/text_classification_linear_probe.ipynb). They will teach you how to probe multiple layers at once to figure out what knowledge is encoded in the hidden representations of a transformer model.
 
