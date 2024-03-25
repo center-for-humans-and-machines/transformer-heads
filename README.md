@@ -58,7 +58,7 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
 * Linear Probes (understanding the inner workings of transformers)
     - Basic example with one probe for causal LM: [notebooks/gpt2/linear_probe.ipynb](notebooks/gpt2/linear_probe.ipynb)
     - Train many probes for causal LM at once: [notebooks/gpt2/multi_linear_probe.ipynb](notebooks/gpt2/multi_linear_probe.ipynb)
-    - Train many probes for text classification once: [notebooks/gpt2/text_classification_linear_probe.ipynb](notebooks/gpt2/text_classification_linear_probe.ipynb)
+    - Train many probes for text classification at once: [notebooks/gpt2/text_classification_linear_probe.ipynb](notebooks/gpt2/text_classification_linear_probe.ipynb)
 * Finetuning on a new type of task (with a new head)
     - QLoRA: [notebooks/gpt2/text_classification_qlora.ipynb](notebooks/gpt2/text_classification_qlora.ipynb)
     - Full finetuning: [notebooks/gpt2/text_classification_full_finetune.ipynb](notebooks/gpt2/text_classification_full_finetune.ipynb)
