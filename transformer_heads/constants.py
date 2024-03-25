@@ -16,6 +16,7 @@ loss_fct_map = {
     "bce": nn.BCELoss(),
 }
 
+# Map model type to base model class attribute name and base model class
 model_type_map = {
     "mistral": ("model", MistralModel),
     "gpt2": ("transformer", GPT2Model),

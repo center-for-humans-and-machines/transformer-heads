@@ -76,3 +76,17 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
 
 ## Joint multi-task training with different types of heads and QLoRA.
 ![_images/example_architecture.svg](_images/example_architecture.svg)
+
+## More custom loss functions and models
+At the state of writing, only a subset of loss functions / models are supported out of the box. At the time of writing, the supported models are `Mistral-7b`, `LLaMA 2` (all model sizes) and `gpt2`. Check [transformer_heads/constants.py](transformer_heads/constants.py) for more up to date info.
+
+However, it is not so hard to add/use different loss functions/models. You'll just need to add their respective information to `loss_fct_map` and `model_type_map`. Just import from `transformer_heads.constants`. To add a loss function, add a mapping from string to torch class. To add a model add a mapping from model type to a 2 tuple out of attribute name of the base model in the Model Class and Base model class. That may sound confusing, but what that means is just the following:
+
+```python
+from transformer_heads.constants import model_type_map, loss_fct_map
+import torch.nn as nn
+from transformers import MistralModel
+
+loss_fct_map["bce"] = nn.BCELoss()
+model_type_map["mistral"] = ("model",MistralModel)
+```
