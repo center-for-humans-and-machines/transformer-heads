@@ -92,8 +92,6 @@ def load_headed(
         model_name,
         config=config,
         device_map=device_map,
-        load_in_4bit=bits == 4,
-        load_in_8bit=bits == 8,
         quantization_config=quantization_config,
         **kwargs,
     )
@@ -171,8 +169,6 @@ def load_lora_with_heads(
     hf_logger.setLevel(ERROR)  # Avoid confusing warning.
     model: HeadedModel = model.from_pretrained(
         base_model_path,
-        load_in_4bit=bits == 4,
-        load_in_8bit=bits == 8,
         config=config,
         device_map=device_map,
         quantization_config=quantization_config,
@@ -242,8 +238,6 @@ def create_headed_qlora(
 
     model: HeadedModel = model.from_pretrained(
         model_name,
-        load_in_4bit=quantization_config.load_in_4bit,
-        load_in_8bit=quantization_config.load_in_8bit,
         config=config,
         device_map=device_map,
         quantization_config=quantization_config,
