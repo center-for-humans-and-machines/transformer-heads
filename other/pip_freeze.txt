@@ -1,0 +1,10 @@
+bitsandbytes==0.42.0
+datasets==2.17.0
+fire==0.5.0
+pandas==2.2.0
+peft==0.8.2
+torch==2.2.0
+torchaudio==2.2.0
+torchvision==0.17.0
+tqdm==4.66.2
+transformers==4.37.2
