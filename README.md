@@ -2,7 +2,7 @@
     <p>
         <a href="https://transformer-heads.readthedocs.io/en/latest/">Documentation</a> |
         <a href="docs/source/getting_started.md">Getting Started</a> |
-        <a href="https://www.reddit.com/r/LocalLLaMA/comments/1bnd621/new_library_transformerheads_for_attaching_heads/">Reddit Post with more info</a> |
+        <a href="https://www.reddit.com/r/LocalLLaMA/comments/1bnd621/new_library_transformerheads_for_attaching_heads/">Reddit Post with more info</a>
     </p>
 </h4>
 
