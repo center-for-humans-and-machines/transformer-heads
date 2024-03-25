@@ -1,7 +1,8 @@
 <h4 align="center">
     <p>
         <a href="https://transformer-heads.readthedocs.io/en/latest/">Documentation</a> |
-        <a href="docs/source/getting_started.md">Getting Started</a>
+        <a href="docs/source/getting_started.md">Getting Started</a> |
+        <a href="https://www.reddit.com/r/LocalLLaMA/comments/1bnd621/new_library_transformerheads_for_attaching_heads/">Reddit Post with more info</a> |
     </p>
 </h4>
 
@@ -90,3 +91,5 @@ from transformers import MistralModel
 loss_fct_map["bce"] = nn.BCELoss()
 model_type_map["mistral"] = ("model",MistralModel)
 ```
+## Can my transformer architecture be supported?
+One of the basic assumtions of my library is that there is a transformer class such as the LlamaForCausalLM class of huggingface that has an [attribute pointing to a base model that outputs raw hidden state](https://github.com/huggingface/transformers/blob/7eb3ba82241c927053689270a0751f4ff5d33c54/src/transformers/models/llama/modeling_llama.py#L1116). If your transformers model is built up in a similar way, adding support may be as easy as adding an entry to the [model_type_map](https://github.com/center-for-humans-and-machines/transformer-heads/blob/8ea0805ab95ca01dff7ea73ed9c844df946c17cb/transformer_heads/constants.py#L20) with the name of the attribute and the class of the base model. You can either do that by importing from [constants.py](transformer_heads/constants.py) or by adding it directly and creating a pull request.
