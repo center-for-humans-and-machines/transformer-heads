@@ -5,3 +5,4 @@ bitsandbytes
 pandas
 tqdm
 m2r2
+sphinx-rtd-theme
