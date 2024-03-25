@@ -12,7 +12,7 @@ Api documentation for transformer-heads
 
    readme
    images
-   transformer-heads
+   transformer_heads
 
 
 Indices and tables
