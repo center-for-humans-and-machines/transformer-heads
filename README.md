@@ -1,3 +1,10 @@
+<h4 align="center">
+    <p>
+        <a href="https://transformer-heads.readthedocs.io/en/latest/">Documentation</a> |
+        <a href="docs/source/getting_started.md">Getting Started</a>
+    </p>
+</h4>
+
 # Transformer Heads
 This library aims to be an allround toolkit for attaching, training, saving and loading of new heads for transformer models.  
 A new head could be: 
@@ -7,9 +14,6 @@ A new head could be:
     - Or one could attach a regression head to turn a large language model into a value function for a reinforcement learning problem.
 
 On top of that, attaching multiple heads at once can make multi-task learning easy, making it possible to train very general models.
-
-Check out the api [documentation at Read the Docs](https://transformer-heads.readthedocs.io/en/latest/).
-
 
 ## Installation
 Install from pypi: `pip install transformer-heads`.
