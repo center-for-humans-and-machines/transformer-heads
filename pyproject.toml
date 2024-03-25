@@ -10,7 +10,9 @@ dependencies = [
     "peft",
     "bitsandbytes",
     "pandas",
-    "tqdm"
+    "tqdm",
+    "datasets",
+    "fire"
 ]
 requires-python = ">= 3.9"
 authors = [
