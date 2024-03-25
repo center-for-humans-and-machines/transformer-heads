@@ -4,3 +4,4 @@ peft
 bitsandbytes
 pandas
 tqdm
+m2r2
