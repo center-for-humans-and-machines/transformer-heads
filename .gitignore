@@ -9,3 +9,4 @@ head_configs.jons
 **/build/**
 **/mistral/**
 **/base/**
+**/tmp/**
