@@ -245,7 +245,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     head_config = self.head_configs[key]
                 selected_hidden_states = hidden_states[head_config.layer_hook]
                 logits: torch.FloatTensor = head(selected_hidden_states)
-                out_preds[head_config.target] = logits
+                out_preds[head_config.name] = logits
                 if (
                     labels is not None
                     and head_config.target in labels
@@ -268,10 +268,9 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         )
                     use_labels = use_labels.view(-1)
                     use_labels = use_labels.to(use_logits.device)
-                    loss_by_head[head_config.target] = loss_fct(use_logits, use_labels)
+                    loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
                     loss = (
-                        loss
-                        + loss_by_head[head_config.target] * head_config.loss_weight
+                        loss + loss_by_head[head_config.name] * head_config.loss_weight
                     )
 
             return HeadedModelOutput(
