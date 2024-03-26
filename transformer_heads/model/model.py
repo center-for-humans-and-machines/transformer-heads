@@ -245,19 +245,19 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     head_config = self.head_configs[key]
                 selected_hidden_states = hidden_states[head_config.layer_hook]
                 logits: torch.FloatTensor = head(selected_hidden_states)
-                out_preds[head_config.name] = logits
+                out_preds[head_config.target] = logits
                 if (
                     labels is not None
-                    and head_config.name in labels
+                    and head_config.target in labels
                     and head_config.loss_fct is not None
                 ):
                     loss_fct = loss_fct_map[head_config.loss_fct]
                     if head_config.is_causal_lm:
                         use_logits = logits[..., :-1, :].contiguous()
-                        use_labels = labels[head_config.name][..., 1:].contiguous()
+                        use_labels = labels[head_config.target][..., 1:].contiguous()
                     else:
                         use_logits = logits
-                        use_labels = labels[head_config.name]
+                        use_labels = labels[head_config.target]
                     if head_config.pred_for_sequence:
                         use_logits = use_logits[..., -1, :].contiguous()
                     if head_config.is_regression:
@@ -268,9 +268,10 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         )
                     use_labels = use_labels.view(-1)
                     use_labels = use_labels.to(use_logits.device)
-                    loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
+                    loss_by_head[head_config.target] = loss_fct(use_logits, use_labels)
                     loss = (
-                        loss + loss_by_head[head_config.name] * head_config.loss_weight
+                        loss
+                        + loss_by_head[head_config.target] * head_config.loss_weight
                     )
 
             return HeadedModelOutput(

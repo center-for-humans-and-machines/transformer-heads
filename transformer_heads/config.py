@@ -38,6 +38,7 @@ class HeadConfig(dict):
     """
 
     name: str
+    target: Optional[str] = None
     in_size: int
     num_outputs: Optional[int]
     layer_hook: int = -1
@@ -64,6 +65,8 @@ class HeadConfig(dict):
         return len(asdict(self))
 
     def __post_init__(self):
+        if self.target is None:
+            self.target = self.name
         assert not (self.pred_for_sequence and self.is_causal_lm)
 
 
