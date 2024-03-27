@@ -27,12 +27,13 @@ Create head configurations
 ```python
 head_config = HeadConfig(
     name=f"imdb_head_3",
-    layer_hook=-3,
+    layer_hook=-3,  # Attach at the output of the third-to-last transformer-block
     in_size=hidden_size,
     output_activation="linear",
     pred_for_sequence=True,
     loss_fct="cross_entropy",
     num_outputs=2,
+    target="label" # The name of the ground-truth column in the dataset
 )
 ```
 Create a model with your head from a pretrained transformer model
