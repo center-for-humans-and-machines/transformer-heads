@@ -39,6 +39,22 @@ heads = [
         num_outputs=2,
         is_regression=False,
         output_bias=False,
+        target="classes",
+    ),
+    HeadConfig(
+        name="classify_seq",
+        layer_hook=-4,
+        in_size=4096,
+        hidden_size=1024,
+        num_layers=2,
+        output_activation="linear",
+        is_causal_lm=False,
+        loss_fct="cross_entropy",
+        num_outputs=2,
+        pred_for_sequence=True,
+        is_regression=False,
+        output_bias=False,
+        target="seq",
     ),
     HeadConfig(
         name="regression_hook",
@@ -71,6 +87,10 @@ def check_consistency(outputs1: HeadedModelOutput, outputs2: HeadedModelOutput):
 def get_test_inputs(device):
     tk = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
     inputs = tk("Paris is the capital of", return_tensors="pt")
+    inputs["classes"] = torch.ones_like(inputs["input_ids"])
+    inputs["seq"] = torch.tensor(1)
+    inputs["regression_hook"] = torch.zeros_like(inputs["input_ids"])
+    inputs["lm_head"] = torch.ones_like(inputs["input_ids"])
     inputs.to(device)
     return tk, inputs
 
@@ -83,6 +103,7 @@ def test_load_model():
 
     tk, inputs = get_test_inputs(model.device)
     outputs: HeadedModelOutput = model(**inputs)
+    print("loss_by_head", outputs["loss_by_head"])
     logits = outputs.preds_by_head["lm_head"]
     next_logits = logits[0, -1, :]
     pred_tk = tk.decode(next_logits.argmax().item())
@@ -123,6 +144,7 @@ def test_load_quantized():
     )
     tk, inputs = get_test_inputs(model.device)
     outputs1 = model(**inputs)
+    print("loss_by_head", outputs1["loss_by_head"])
     model.save_pretrained("mistral_heads")
     del model
     model = load_headed(

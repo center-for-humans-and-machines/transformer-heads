@@ -100,7 +100,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 model_type_map[config.model_type][1](config.to_base_class()),
             )
             self.vocab_size: int = config.vocab_size
-            self.head_configs: dict[str:HeadConfig] = {
+            self.head_configs: dict[str, HeadConfig] = {
                 cfg.name: cfg for cfg in config.output_heads
             }
             self.heads = nn.ModuleDict(
@@ -228,8 +228,23 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             )
 
             out_preds = {}
-
             hidden_states = outputs.hidden_states
+
+            if any(
+                [head_config.ignore_pads for head_config in self.head_configs.values()]
+            ):
+                pad_tk_id = (
+                    self.config.pad_token_id
+                    if self.config.pad_token_id is not None
+                    else self.config.eos_token_id
+                )
+                assert (
+                    pad_tk_id is not None
+                ), "Model must have pad token id set if any head ignores pads."
+                sequence_lengths = torch.eq(input_ids, pad_tk_id).int().argmax(-1) - 1
+                sequence_lengths = sequence_lengths % input_ids.shape[-1]
+                sequence_lengths = sequence_lengths.to(outputs.hidden_states[0].device)
+
             loss = torch.tensor(
                 0.0, device=input_ids.device, dtype=torch.float32, requires_grad=True
             )
@@ -259,14 +274,35 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         use_logits = logits
                         use_labels = labels[head_config.target]
                     if head_config.pred_for_sequence:
-                        use_logits = use_logits[..., -1, :].contiguous()
+                        if head_config.ignore_pads:
+                            use_logits = logits[
+                                torch.arange(logits.shape[0], device=logits.device),
+                                sequence_lengths,
+                            ]
+                        else:
+                            use_logits = use_logits[..., -1, :].contiguous()
+                    if head_config.ignore_pads and not head_config.pred_for_sequence:
+                        use_logits = torch.concatenate(
+                            [
+                                use_logits[i, : sequence_lengths[i]]
+                                for i in range(use_logits.shape[0])
+                            ]
+                        )
+                        use_labels = torch.concatenate(
+                            [
+                                use_labels[i, : sequence_lengths[i]]
+                                for i in range(use_labels.shape[0])
+                            ]
+                        )
+                    else:
+                        use_labels = use_labels.view(-1)
+
                     if head_config.is_regression:
                         use_logits = use_logits.view(-1)
                     else:
                         use_logits = use_logits.view(
                             -1, head_config.num_outputs or self.config.vocab_size
                         )
-                    use_labels = use_labels.view(-1)
                     use_labels = use_labels.to(use_logits.device)
                     loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
                     loss = (

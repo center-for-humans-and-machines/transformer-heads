@@ -28,6 +28,7 @@ class HeadConfig(dict):
         hidden_size (int): The size of the hidden layers if the head should be an mlp. Default is 0.
         num_layers (int): The number of layers in the head. Set to 1 for a linear head and to > 1 for an mlp head. Default is 1.
         output_activation (str): The activation function for the output layer. Default is "linear".
+        target (str): The name of the label column for this head. Defaults to name.
         is_causal_lm (Optional[bool]): Whether the head is for doing causal language modelling. Default is False.
         pred_for_sequence (Optional[bool]): Whether the head predicts on output per sequence (E.g text classification). Default is False.
         is_regression (Optional[bool]): Whether the head is for a regression task. Default is False.
@@ -35,16 +36,17 @@ class HeadConfig(dict):
         loss_fct (Optional[str]): The loss function for the head. Options are "cross_entropy", "mse", "bce". Default is "cross_entropy".
         trainable (Optional[bool]): Whether the head is trainable. Default is True.
         loss_weight (Optional[float]): The weight of this head when computing the loss. Default is 1.0.
+        ignore_pads (Optional[bool]): Whether to ignore padding tokens when computing the loss. Default is False for causal_lm and True otherwise.
     """
 
     name: str
-    target: Optional[str] = None
     in_size: int
     num_outputs: Optional[int]
     layer_hook: int = -1
     hidden_size: int = 0
     num_layers: int = 1
     output_activation: str = "linear"
+    target: Optional[str] = None
     is_causal_lm: Optional[bool] = False
     pred_for_sequence: Optional[bool] = False
     is_regression: Optional[bool] = False
@@ -52,6 +54,7 @@ class HeadConfig(dict):
     loss_fct: Optional[str] = "cross_entropy"
     trainable: Optional[bool] = True
     loss_weight: Optional[float] = 1.0
+    ignore_pads: Optional[bool] = None
 
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
@@ -65,9 +68,13 @@ class HeadConfig(dict):
         return len(asdict(self))
 
     def __post_init__(self):
+        if self.ignore_pads is None:
+            self.ignore_pads = not self.is_causal_lm
         if self.target is None:
             self.target = self.name
-        assert not (self.pred_for_sequence and self.is_causal_lm)
+        assert not (
+            self.pred_for_sequence and self.is_causal_lm
+        ), "Head cannot be both causal lm and predict for sequence"
 
 
 def create_headed_model_config(
