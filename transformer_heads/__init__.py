@@ -6,4 +6,4 @@ from transformer_heads.util.load_model import (
     load_lora_with_heads,
 )
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"

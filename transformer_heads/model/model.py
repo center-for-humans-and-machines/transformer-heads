@@ -304,6 +304,14 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                             -1, head_config.num_outputs or self.config.vocab_size
                         )
                     use_labels = use_labels.to(use_logits.device)
+                    print(
+                        use_labels.shape,
+                        use_logits.shape,
+                        torch.min(use_labels),
+                        torch.max(use_labels),
+                        torch.min(use_logits),
+                        torch.max(use_logits),
+                    )
                     loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
                     loss = (
                         loss + loss_by_head[head_config.name] * head_config.loss_weight
