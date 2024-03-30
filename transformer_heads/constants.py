@@ -14,6 +14,7 @@ loss_fct_map = {
     "mse": nn.MSELoss(),
     "cross_entropy": nn.CrossEntropyLoss(),
     "bce": nn.BCELoss(),
+    "bce_with_logits": nn.BCEWithLogitsLoss(),
 }
 
 # Map model type to base model class attribute name and base model class
