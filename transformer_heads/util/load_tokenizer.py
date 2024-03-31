@@ -35,4 +35,7 @@ def load_tokenizer(model_path):
         raise FileNotFoundError(
             f"Adapter config file not found in {model_path}. If you are not trying to load from an adapter_model, just load the tokenizer with AutoTokenizer.from_pretrained"
         )
-    return AutoTokenizer.from_pretrained(base_model_path)
+    tk = AutoTokenizer.from_pretrained(base_model_path)
+    if tk.pad_token is None:
+        tk.pad_token = tk.eos_token
+    return tk

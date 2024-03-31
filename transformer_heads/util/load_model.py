@@ -51,7 +51,7 @@ def load_headed(
     quantization_config: BitsAndBytesConfig = None,
     freeze_base_model: bool = True,
     **kwargs,
-):
+) -> HeadedModel:
     """
     Loads a transformer model with additional heads.
 
@@ -126,7 +126,7 @@ def load_lora_with_heads(
     torch_dtype=torch.float32,
     gradient_checkpointing: bool = False,
     **kwargs,
-):
+) -> HeadedModel:
     """
     Loads a LoRA (Low Rank Adaptation) transformer model with additional heads.
 
@@ -207,7 +207,7 @@ def create_headed_qlora(
     device_map="auto",
     gradient_checkpointing: bool = False,
     **kwargs,
-):
+) -> HeadedModel:
     """
     Creates a quantized LoRA (Low Rank Adaptation) transformer model with additional heads.
 
