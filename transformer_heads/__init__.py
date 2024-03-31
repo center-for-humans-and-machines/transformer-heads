@@ -5,5 +5,6 @@ from transformer_heads.util.load_model import (
     load_headed,
     load_lora_with_heads,
 )
+from transformer_heads.util.load_tokenizer import load_tokenizer
 
 __version__ = "0.0.7"
