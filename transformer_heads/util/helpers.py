@@ -34,7 +34,7 @@ class DataCollatorWithPadding:
         __call__(features: List[Dict[str, Any]]) -> Dict[str, Any]: Pad the sequences in the features to the same length.
     """
 
-    feature_name_to_padding_value: dict[str, int]
+    feature_name_to_padding_value: dict[str, int | float]
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
