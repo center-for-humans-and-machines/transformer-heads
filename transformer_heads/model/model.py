@@ -10,9 +10,11 @@ Functions:
     get_multi_head_transformer: Patch a pretrained transformer model to add multiple heads.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from os import PathLike
 from typing import Any, Callable, Dict, List, Optional, Type
+from collections import deque
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -59,6 +61,14 @@ class HeadedModel(ABC, PreTrainedModel):
     heads: nn.ModuleDict
     lm_head_config: Optional[HeadConfig]
     lm_head: Optional[MLPHead]
+
+    @abstractmethod
+    def set_adaptive_loss(self, enable: bool, deque_len=20, warmup_steps=5):
+        pass
+
+    @abstractmethod
+    def adapt_losses(self, loss_by_head) -> Dict[str, float]:
+        pass
 
 
 def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
@@ -121,6 +131,59 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     del self.heads[name]
                     break
             self._hf_peft_config_loaded = False
+            self.adaptive_loss = False
+            self.adaptive_warmup = None
+            self.loss_history_by_head: Dict[str, deque] = {}
+
+        def set_adaptive_loss(self, enable: bool, deque_len=20, warmup_steps=5):
+            """
+            Sets the adaptive loss for the model.
+
+            Sets the warmup steps and initializes a deque for each head in the model.
+
+            Args:
+                enable (bool): Whether to enable adaptive loss.
+                deque_len (int, optional): The maximum length of the deque for each head. Defaults to 20.
+                warmup_steps (int, optional): The number of warmup steps. Defaults to 5.
+
+            Raises:
+                AssertionError: If adaptive loss is enabled and any head has a loss weight other than 1.0.
+            """
+            self.adaptive_loss = enable
+            if self.adaptive_loss:
+                self.adaptive_warmup = warmup_steps
+                for name, cfg in self.head_configs.items():
+                    assert (
+                        cfg.loss_weight == 1.0
+                    ), "Adaptive loss not supported with loss weights"
+                    self.loss_history_by_head[name] = deque(maxlen=deque_len)
+
+        def adapt_losses(self, loss_by_head):
+            """
+            Adapts the losses for each head in the model.
+
+            If the number of losses in the history for each head is less than the number of warmup steps,
+            the function returns a dictionary with the keys being the head names and the values being 0.
+            Otherwise, the function calculates the new loss for each head by subtracting the mean of the
+            loss history from the current loss and dividing by the standard deviation of the loss history.
+
+            Args:
+                loss_by_head (dict[str, float]): A dictionary with the keys being the head names and the values being the current losses.
+
+            Returns:
+                dict[str, float]: A dictionary with the keys being the head names and the values being the new losses.
+            """
+            if (
+                len(next(iter(self.loss_history_by_head.values())))
+                < self.adaptive_warmup
+            ):
+                return {key: 0 for key in loss_by_head.keys()}
+            else:
+                new_loss_by_head = {}
+                for key, loss in loss_by_head.items():
+                    ray = np.array(self.loss_history_by_head[key])
+                    new_loss_by_head[key] = (loss - np.mean(ray)) / np.std(ray)
+                return new_loss_by_head
 
         def save_pretrained(
             self,
@@ -305,13 +368,28 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         )
                     use_labels = use_labels.to(use_logits.device)
                     loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
-                    loss = (
-                        loss + loss_by_head[head_config.name] * head_config.loss_weight
+            if self.adaptive_loss:
+                adapted_losses = self.adapt_losses(loss_by_head)
+                loss = sum(adapted_losses.values())
+                for key, value in loss_by_head.items():
+                    self.loss_history_by_head[key].append(value.detach().cpu().item())
+            else:
+                loss = sum(
+                    value
+                    * (
+                        self.lm_head_config.loss_weight
+                        if key == "lm_head"
+                        else self.head_configs[key].loss_weight
                     )
+                    for key, value in loss_by_head.items()
+                )
 
             return HeadedModelOutput(
                 loss=loss,
                 loss_by_head=loss_by_head,
+                adapted_loss_by_head=(
+                    adapted_losses if self.adaptive_loss else loss_by_head
+                ),
                 preds_by_head=out_preds,
                 past_key_values=outputs.past_key_values,
                 hidden_states=outputs.hidden_states if output_hidden_states else None,

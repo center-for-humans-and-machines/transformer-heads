@@ -50,6 +50,7 @@ def load_headed(
     device_map="auto",
     quantization_config: BitsAndBytesConfig = None,
     freeze_base_model: bool = True,
+    adaptive_loss: bool = False,
     **kwargs,
 ) -> HeadedModel:
     """
@@ -64,6 +65,7 @@ def load_headed(
         device_map (str, optional): The device map to use when loading the model.
         quantization_config (BitsAndBytesConfig, optional): The quantization configuration to use when loading the model.
         freeze_base_model (bool, optional): Whether to freeze the base model during training.
+        adaptive_loss (bool, optional): Whether to use adaptive loss scaling.
         **kwargs: Additional keyword arguments to pass to from_pretrained.
     """
     assert head_configs is not None or head_folder_path is not None
@@ -95,6 +97,7 @@ def load_headed(
         quantization_config=quantization_config,
         **kwargs,
     )
+    model.set_adaptive_loss(adaptive_loss)
     if freeze_base_model and quantization_config is None:
         for _name, param in model.named_parameters():
             param.requires_grad = False
@@ -206,6 +209,7 @@ def create_headed_qlora(
     fully_trained_heads: bool = True,
     device_map="auto",
     gradient_checkpointing: bool = False,
+    adaptive_loss: bool = False,
     **kwargs,
 ) -> HeadedModel:
     """
@@ -243,6 +247,7 @@ def create_headed_qlora(
         quantization_config=quantization_config,
         **kwargs,
     )
+    model.set_adaptive_loss(adaptive_loss)
 
     if lora_config.target_modules is None:
         lora_config.target_modules = find_all_linear_names(bits, model, noadd=["heads"])

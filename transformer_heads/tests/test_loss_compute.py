@@ -79,12 +79,43 @@ def get_test_inputs(device):
     inputs = tk(
         ["Paris is the capital of", "I am the"], return_tensors="pt", padding=True
     )
-    inputs["classes"] = torch.ones_like(inputs["input_ids"])
-    inputs["seq"] = torch.tensor([1, 0])
-    inputs["regression_hook"] = torch.zeros_like(inputs["input_ids"])
-    inputs["lm_head"] = torch.ones_like(inputs["input_ids"])
+    inputs["classes"] = torch.randint(
+        low=0, high=2, size=(inputs["input_ids"].size(0), inputs["input_ids"].size(1))
+    )
+    inputs["seq"] = torch.randint(low=0, high=2, size=(inputs["input_ids"].size(0),))
+    inputs["regression_hook"] = torch.rand(
+        (inputs["input_ids"].size(0), inputs["input_ids"].size(1))
+    )
+    inputs["lm_head"] = torch.randint(
+        low=0,
+        high=32000,
+        size=(inputs["input_ids"].size(0), inputs["input_ids"].size(1)),
+    )
     inputs.to(device)
     return tk, inputs
+
+
+def test_adaptive_loss():
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+    )
+    model = load_headed(
+        MistralForCausalLM,
+        "mistralai/Mistral-7B-v0.1",
+        heads,
+        device_map="cuda",
+        quantization_config=quantization_config,
+    )
+    model.set_adaptive_loss(True)
+
+    for _ in range(20):
+        tk, inputs = get_test_inputs(model.device)
+        outputs = model(**inputs)
+        print(
+            f"\nLoss: {outputs['loss']}\nloss_by_head: {outputs['loss_by_head']}\nadapted_loss_by_head: {outputs['adapted_loss_by_head']}"
+        )
 
 
 def test_loss():
