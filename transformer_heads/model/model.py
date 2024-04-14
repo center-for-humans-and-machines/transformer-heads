@@ -371,8 +371,11 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             if self.adaptive_loss:
                 adapted_losses = self.adapt_losses(loss_by_head)
                 loss = torch.sum(torch.stack(list(adapted_losses.values())))
-                for key, value in loss_by_head.items():
-                    self.loss_history_by_head[key].append(value.detach().cpu().item())
+                if torch.is_grad_enabled():
+                    for key, value in loss_by_head.items():
+                        self.loss_history_by_head[key].append(
+                            value.detach().cpu().item()
+                        )
             else:
                 loss = torch.sum(
                     torch.stack(
