@@ -114,8 +114,9 @@ def test_adaptive_loss():
         tk, inputs = get_test_inputs(model.device)
         outputs = model(**inputs)
         print(
-            f"\nLoss: {outputs['loss']}\nloss_by_head: {outputs['loss_by_head']}\nadapted_loss_by_head: {outputs['adapted_loss_by_head']}"
+            f"\nLoss: {outputs['loss']}\nloss_type:{type(outputs['loss'])}\nloss_by_head: {outputs['loss_by_head']}\nadapted_loss_by_head: {outputs['adapted_loss_by_head']}"
         )
+        print(f"Loss requires grad: {outputs['loss'].requires_grad}")
 
 
 def test_loss():

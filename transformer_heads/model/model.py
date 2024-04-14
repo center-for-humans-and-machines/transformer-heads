@@ -177,7 +177,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 len(next(iter(self.loss_history_by_head.values())))
                 < self.adaptive_warmup
             ):
-                return {key: 0 for key in loss_by_head.keys()}
+                return {key: value * 0 for key, value in loss_by_head.items()}
             else:
                 new_loss_by_head = {}
                 for key, loss in loss_by_head.items():
@@ -370,18 +370,22 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
             if self.adaptive_loss:
                 adapted_losses = self.adapt_losses(loss_by_head)
-                loss = sum(adapted_losses.values())
+                loss = torch.sum(torch.stack(list(adapted_losses.values())))
                 for key, value in loss_by_head.items():
                     self.loss_history_by_head[key].append(value.detach().cpu().item())
             else:
-                loss = sum(
-                    value
-                    * (
-                        self.lm_head_config.loss_weight
-                        if key == "lm_head"
-                        else self.head_configs[key].loss_weight
+                loss = torch.sum(
+                    torch.stack(
+                        [
+                            value
+                            * (
+                                self.lm_head_config.loss_weight
+                                if key == "lm_head"
+                                else self.head_configs[key].loss_weight
+                            )
+                            for key, value in loss_by_head.items()
+                        ]
                     )
-                    for key, value in loss_by_head.items()
                 )
 
             return HeadedModelOutput(
