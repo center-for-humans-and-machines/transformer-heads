@@ -368,27 +368,27 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                         )
                     use_labels = use_labels.to(use_logits.device)
                     loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
+
             if self.adaptive_loss:
                 adapted_losses = self.adapt_losses(loss_by_head)
-                loss = torch.sum(torch.stack(list(adapted_losses.values())))
+                loss = sum(adapted_losses.values(), loss)
                 if torch.is_grad_enabled():
                     for key, value in loss_by_head.items():
                         self.loss_history_by_head[key].append(
                             value.detach().cpu().item()
                         )
             else:
-                loss = torch.sum(
-                    torch.stack(
-                        [
-                            value
-                            * (
-                                self.lm_head_config.loss_weight
-                                if key == "lm_head"
-                                else self.head_configs[key].loss_weight
-                            )
-                            for key, value in loss_by_head.items()
-                        ]
-                    )
+                loss = sum(
+                    [
+                        value
+                        * (
+                            self.lm_head_config.loss_weight
+                            if key == "lm_head"
+                            else self.head_configs[key].loss_weight
+                        )
+                        for key, value in loss_by_head.items()
+                    ],
+                    loss,
                 )
 
             return HeadedModelOutput(

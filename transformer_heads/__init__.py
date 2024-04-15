@@ -7,4 +7,4 @@ from transformer_heads.util.load_model import (
 )
 from transformer_heads.util.load_tokenizer import load_tokenizer
 
-__version__ = "0.0.13"
+__version__ = "0.0.14"
