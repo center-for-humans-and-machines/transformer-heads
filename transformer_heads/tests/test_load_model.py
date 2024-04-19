@@ -11,6 +11,7 @@ from transformer_heads.util.load_model import (
     load_headed,
     load_lora_with_heads,
 )
+from transformer_heads.util.helpers import get_model_params
 from transformer_heads.util.model import print_trainable_parameters
 
 heads = [
@@ -84,8 +85,8 @@ def check_consistency(outputs1: HeadedModelOutput, outputs2: HeadedModelOutput):
         assert probs1.allclose(probs2, atol=1e-4, rtol=1e-3)
 
 
-def get_test_inputs(device):
-    tk = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
+def get_test_inputs(device, model_path="mistralai/Mistral-7B-v0.1"):
+    tk = AutoTokenizer.from_pretrained(model_path)
     inputs = tk("Paris is the capital of", return_tensors="pt")
     inputs["classes"] = torch.ones_like(inputs["input_ids"])
     inputs["seq"] = torch.tensor(1)
@@ -95,13 +96,13 @@ def get_test_inputs(device):
     return tk, inputs
 
 
-def test_load_model():
-    model = load_headed(
-        MistralForCausalLM, "mistralai/Mistral-7B-v0.1", heads, device_map="cpu"
-    )
-    print("Loaded headed Mistral model successfully!")
+def test_load_model(model_path="mistralai/Mistral-7B-v0.1"):
+    params = get_model_params(model_path)
+    heads[0].num_outputs = params["vocab_size"]
+    model = load_headed(params["model_class"], model_path, heads, device_map="cpu")
+    print("Loaded headed model successfully!")
 
-    tk, inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device, model_path=model_path)
     outputs: HeadedModelOutput = model(**inputs)
     print("loss_by_head", outputs["loss_by_head"])
     logits = outputs.preds_by_head["lm_head"]
@@ -109,13 +110,13 @@ def test_load_model():
     pred_tk = tk.decode(next_logits.argmax().item())
     print("Model prediction:", pred_tk)
 
-    model.save_pretrained("mistral_headed")
-    print("Saved headed Mistral model successfully!")
+    model.save_pretrained("headed_model")
+    print("Saved headed model successfully!")
     del model
-    model = get_multi_head_transformer(MistralForCausalLM).from_pretrained(
-        "mistral_headed", device_map="cpu"
+    model = get_multi_head_transformer(params["model_class"]).from_pretrained(
+        "headed_model", device_map="cpu"
     )
-    print("Loaded saved headed Mistral model successfully!")
+    print("Loaded saved headed model successfully!")
     inputs.to(model.device)
     new_outputs: HeadedModelOutput = model(**inputs)
     new_logits = new_outputs.preds_by_head["lm_head"].to(logits.device)
@@ -125,7 +126,9 @@ def test_load_model():
     check_consistency(outputs, new_outputs)
 
 
-def test_load_quantized():
+def test_load_quantized(model_path="mistralai/Mistral-7B-v0.1"):
+    params = get_model_params(model_path)
+    heads[0].num_outputs = params["vocab_size"]
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         load_in_8bit=False,
@@ -136,21 +139,21 @@ def test_load_quantized():
         bnb_4bit_quant_type="nf4",
     )
     model = load_headed(
-        MistralForCausalLM,
-        "mistralai/Mistral-7B-v0.1",
+        params["model_class"],
+        model_path,
         heads,
         device_map="cuda",
         quantization_config=quantization_config,
     )
-    tk, inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device, model_path=model_path)
     outputs1 = model(**inputs)
     print("loss_by_head", outputs1["loss_by_head"])
-    model.save_pretrained("mistral_heads")
+    model.save_pretrained("headed_model")
     del model
     model = load_headed(
-        MistralForCausalLM,
-        "mistralai/Mistral-7B-v0.1",
-        head_folder_path="mistral_heads",
+        params["model_class"],
+        model_path,
+        head_folder_path="headed_model",
         device_map="cuda",
         quantization_config=quantization_config,
     )
@@ -158,7 +161,9 @@ def test_load_quantized():
     check_consistency(outputs1, outputs2)
 
 
-def test_qlora():
+def test_qlora(model_path="mistralai/Mistral-7B-v0.1"):
+    params = get_model_params(model_path)
+    heads[0].num_outputs = params["vocab_size"]
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         load_in_8bit=False,
@@ -177,33 +182,33 @@ def test_qlora():
         task_type="CAUSAL_LM",
     )
     model = create_headed_qlora(
-        MistralForCausalLM,
-        "mistralai/Mistral-7B-v0.1",
+        params["model_class"],
+        model_path,
         quantization_config=quantization_config,
         lora_config=lora_config,
         head_configs=heads,
         device_map="cuda",
     )
     print_trainable_parameters(model, use_4bit=quantization_config.load_in_4bit)
-    print("Loaded headed qlora Mistral model successfully!")
-    tk, inputs = get_test_inputs(model.device)
+    print("Loaded headed qlora model successfully!")
+    tk, inputs = get_test_inputs(model.device, model_path=model_path)
     print(inputs["input_ids"].dtype)
     outputs: HeadedModelOutput = model(**inputs)
     logits = outputs.preds_by_head["lm_head"]
     next_logits = logits[0, -1, :]
     pred_tk = tk.decode(next_logits.argmax().item())
     print("Model prediction:", pred_tk)
-    model.save_pretrained("mistral_headed_qlora")
-    print("Saved headed qlora Mistral model successfully!")
+    model.save_pretrained("headed_model_qlora")
+    print("Saved headed qlora model successfully!")
     del model
     model = load_lora_with_heads(
-        MistralForCausalLM,
-        "mistral_headed_qlora",
+        params["model_class"],
+        "headed_model_qlora",
         quantization_config,
         device_map="cuda",
     )
     print_trainable_parameters(model, use_4bit=quantization_config.load_in_4bit)
-    print("Loaded saved headed qlora Mistral model successfully!")
+    print("Loaded saved headed qlora model successfully!")
     print(inputs["input_ids"].dtype)
     new_outputs: HeadedModelOutput = model(**inputs)
     new_logits = new_outputs.preds_by_head["lm_head"]

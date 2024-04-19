@@ -328,6 +328,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     labels is not None
                     and head_config.target in labels
                     and head_config.loss_fct is not None
+                    and labels[head_config.target] is not None
                 ):
                     loss_fct = loss_fct_map[head_config.loss_fct]
                     if head_config.is_causal_lm:

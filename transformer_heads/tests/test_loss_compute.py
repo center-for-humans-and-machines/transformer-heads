@@ -11,6 +11,7 @@ from transformer_heads.util.load_model import (
     load_headed,
     load_lora_with_heads,
 )
+from transformer_heads.util.helpers import get_model_params
 from transformer_heads.util.model import print_trainable_parameters
 
 heads = [
@@ -72,8 +73,8 @@ heads = [
 ]
 
 
-def get_test_inputs(device):
-    tk = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
+def get_test_inputs(device, model_path="mistralai/Mistral-7B-v0.1"):
+    tk = AutoTokenizer.from_pretrained(model_path)
     if tk.pad_token_id is None:
         tk.pad_token = tk.eos_token
     inputs = tk(
@@ -95,15 +96,16 @@ def get_test_inputs(device):
     return tk, inputs
 
 
-def test_adaptive_loss():
+def test_adaptive_loss(model_path="mistralai/Mistral-7B-v0.1"):
+    model_params = get_model_params(model_path)
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
     )
     model = load_headed(
-        MistralForCausalLM,
-        "mistralai/Mistral-7B-v0.1",
+        model_params["model_class"],
+        model_path,
         heads,
         device_map="cuda",
         quantization_config=quantization_config,
@@ -111,7 +113,7 @@ def test_adaptive_loss():
     model.set_adaptive_loss(True)
 
     for _ in range(20):
-        tk, inputs = get_test_inputs(model.device)
+        tk, inputs = get_test_inputs(model.device, model_path)
         outputs = model(**inputs)
         print(
             f"\nLoss: {outputs['loss']}\nloss_type:{type(outputs['loss'])}\nloss_by_head: {outputs['loss_by_head']}\nadapted_loss_by_head: {outputs['adapted_loss_by_head']}"
@@ -119,21 +121,22 @@ def test_adaptive_loss():
         print(f"Loss requires grad: {outputs['loss'].requires_grad}")
 
 
-def test_loss():
+def test_loss(model_path="mistralai/Mistral-7B-v0.1"):
+    model_params = get_model_params(model_path)
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
     )
     model = load_headed(
-        MistralForCausalLM,
-        "mistralai/Mistral-7B-v0.1",
+        model_params["model_class"],
+        model_path,
         heads,
         device_map="cuda",
         quantization_config=quantization_config,
     )
 
-    tk, inputs = get_test_inputs(model.device)
+    tk, inputs = get_test_inputs(model.device, model_path)
 
     outputs = model(**inputs)
 
