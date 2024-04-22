@@ -182,7 +182,9 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 new_loss_by_head = {}
                 for key, loss in loss_by_head.items():
                     ray = np.array(self.loss_history_by_head[key])
-                    new_loss_by_head[key] = (loss - np.mean(ray)) / np.std(ray)
+                    new_loss_by_head[key] = (loss - np.mean(ray)) / np.clip(
+                        np.std(ray), 1e-6, None
+                    )
                 return new_loss_by_head
 
         def save_pretrained(
@@ -372,12 +374,16 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
 
             if self.adaptive_loss:
                 adapted_losses = self.adapt_losses(loss_by_head)
-                loss = sum(adapted_losses.values(), loss)
+                loss = sum(
+                    filter(lambda x: torch.all(x.isfinite()), adapted_losses.values()),
+                    loss,
+                )
                 if torch.is_grad_enabled():
                     for key, value in loss_by_head.items():
-                        self.loss_history_by_head[key].append(
-                            value.detach().cpu().item()
-                        )
+                        if torch.all(torch.isfinite(value)):
+                            self.loss_history_by_head[key].append(
+                                value.detach().cpu().item()
+                            )
             else:
                 loss = sum(
                     [
@@ -388,6 +394,7 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                             else self.head_configs[key].loss_weight
                         )
                         for key, value in loss_by_head.items()
+                        if torch.all(value.isfinite())
                     ],
                     loss,
                 )
