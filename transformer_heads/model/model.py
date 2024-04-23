@@ -13,7 +13,7 @@ Functions:
 from abc import ABC, abstractmethod
 from os import PathLike
 from typing import Any, Callable, Dict, List, Optional, Type
-from collections import deque
+from collections import defaultdict
 import numpy as np
 
 import torch
@@ -25,6 +25,7 @@ from transformer_heads.config import HeadConfig, create_headed_model_config
 from transformer_heads.constants import loss_fct_map, model_type_map
 from transformer_heads.model.head import MLPHead
 from transformer_heads.output import HeadedModelOutput
+from transformer_heads.util.helpers import Welfords
 
 
 def get_headed_pretrained_model_class(base_model_class: Type[PreTrainedModel]):
@@ -61,9 +62,12 @@ class HeadedModel(ABC, PreTrainedModel):
     heads: nn.ModuleDict
     lm_head_config: Optional[HeadConfig]
     lm_head: Optional[MLPHead]
+    adaptive_loss: bool
+    adaptive_warmup: Optional[int]
+    adaptive_collect: Optional[dict[str, Welfords]]
 
     @abstractmethod
-    def set_adaptive_loss(self, enable: bool, deque_len=20, warmup_steps=5):
+    def set_adaptive_loss(self, enable: bool, warmup_steps=5):
         pass
 
     @abstractmethod
@@ -133,17 +137,14 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             self._hf_peft_config_loaded = False
             self.adaptive_loss = False
             self.adaptive_warmup = None
-            self.loss_history_by_head: Dict[str, deque] = {}
+            self.adaptive_collect = None
 
-        def set_adaptive_loss(self, enable: bool, deque_len=20, warmup_steps=5):
+        def set_adaptive_loss(self, enable: bool, warmup_steps=5):
             """
             Sets the adaptive loss for the model.
 
-            Sets the warmup steps and initializes a deque for each head in the model.
-
             Args:
                 enable (bool): Whether to enable adaptive loss.
-                deque_len (int, optional): The maximum length of the deque for each head. Defaults to 20.
                 warmup_steps (int, optional): The number of warmup steps. Defaults to 5.
 
             Raises:
@@ -151,12 +152,12 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
             """
             self.adaptive_loss = enable
             if self.adaptive_loss:
+                self.adaptive_collect = defaultdict(Welfords)
                 self.adaptive_warmup = warmup_steps
                 for name, cfg in self.head_configs.items():
                     assert (
                         cfg.loss_weight == 1.0
                     ), "Adaptive loss not supported with loss weights"
-                    self.loss_history_by_head[name] = deque(maxlen=deque_len)
 
         def adapt_losses(self, loss_by_head):
             """
@@ -174,17 +175,17 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                 dict[str, float]: A dictionary with the keys being the head names and the values being the new losses.
             """
             if (
-                len(next(iter(self.loss_history_by_head.values())))
+                len(self.adaptive_collect) == 0
+                or next(iter(self.adaptive_collect.values())).count
                 < self.adaptive_warmup
             ):
                 return {key: value * 0 for key, value in loss_by_head.items()}
             else:
                 new_loss_by_head = {}
                 for key, loss in loss_by_head.items():
-                    ray = np.array(self.loss_history_by_head[key])
-                    new_loss_by_head[key] = (loss - np.mean(ray)) / np.clip(
-                        np.std(ray), 1e-6, None
-                    )
+                    new_loss_by_head[key] = (
+                        loss - self.adaptive_collect[key].mean
+                    ) / np.clip(self.adaptive_collect[key].std, 1e-6, None)
                 return new_loss_by_head
 
         def save_pretrained(
@@ -378,12 +379,11 @@ def get_multi_head_transformer(base_model_class: Type[PreTrainedModel]):
                     filter(lambda x: torch.all(x.isfinite()), adapted_losses.values()),
                     loss,
                 )
-                if torch.is_grad_enabled():
+                if self.training:
                     for key, value in loss_by_head.items():
                         if torch.all(torch.isfinite(value)):
-                            self.loss_history_by_head[key].append(
-                                value.detach().cpu().item()
-                            )
+                            val = value.item()
+                            self.adaptive_collect[key].update(val)
             else:
                 loss = sum(
                     [

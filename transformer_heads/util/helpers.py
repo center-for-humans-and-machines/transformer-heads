@@ -11,6 +11,7 @@ Functions:
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
+from math import sqrt
 
 import torch
 from torch.nn.utils.rnn import pad_sequence
@@ -82,3 +83,21 @@ def get_model_params(model_path: str):
     if model_path == "gpt2" and "hidden_size" not in cfg:
         cfg["hidden_size"] = 768
     return cfg
+
+
+class Welfords:
+    def __init__(self):
+        self.count: int = 0
+        self.mean: float = 0.0
+        self.M2: float = 0.0
+
+    def update(self, new_value):
+        self.count += 1
+        delta = new_value - self.mean
+        self.mean += delta / self.count
+        delta2 = new_value - self.mean
+        self.M2 += delta * delta2
+
+    @property
+    def std(self) -> float:
+        return sqrt(self.M2 / self.count) if self.count > 1 else 0.0
