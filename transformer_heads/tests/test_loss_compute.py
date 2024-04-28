@@ -111,6 +111,7 @@ def test_adaptive_loss(model_path="mistralai/Mistral-7B-v0.1"):
         quantization_config=quantization_config,
     )
     model.set_adaptive_loss(True)
+    model.train()
 
     for _ in range(20):
         tk, inputs = get_test_inputs(model.device, model_path)

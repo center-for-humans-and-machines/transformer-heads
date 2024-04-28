@@ -74,8 +74,8 @@ def find_all_linear_names(bits, model, noadd=[]):
             else:
                 lora_module_names.add(names[-1])
 
-    if "lm_head" in lora_module_names:  # needed for 16-bit
-        lora_module_names.remove("lm_head")
+    # if "lm_head" in lora_module_names:  # needed for 16-bit
+    #    lora_module_names.remove("lm_head")
     return list(lora_module_names)
 
 

@@ -38,3 +38,15 @@ class HeadedModelOutput(ModelOutput):
     past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
     hidden_states: Optional[Tuple[torch.FloatTensor, ...]] = None
     attentions: Optional[Tuple[torch.FloatTensor, ...]] = None
+
+
+@dataclass
+class HeadedModelGenerateOutput(ModelOutput):
+    """
+    An generation output class for a model with multiple heads.
+    """
+
+    sequences: torch.LongTensor = None
+    logprobs: torch.FloatTensor = None
+    head_outputs: dict[str, torch.FloatTensor] = None
+    past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None

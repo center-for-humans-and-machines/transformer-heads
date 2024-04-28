@@ -116,6 +116,12 @@ def load_headed(
             if head.trainable:
                 head.set_requires_grad(True)
             head.requires_individual_saving = True
+    if (
+        not only_inference
+        and model.lm_head is not None
+        and model.lm_head_config.trainable
+    ):
+        model.lm_head.requires_grad_(True)
     return model
 
 
@@ -196,6 +202,13 @@ def load_lora_with_heads(
         if not only_inference and fully_trained_heads:
             head.set_requires_grad(True)
             head.requires_individual_saving = True
+
+    if (
+        not only_inference
+        and model.lm_head is not None
+        and model.lm_head_config.trainable
+    ):
+        model.lm_head.requires_grad_(True)
     patch_save_pretrained(model)
     return model
 
@@ -261,8 +274,11 @@ def create_headed_qlora(
     if fully_trained_heads:
         head: MLPHead
         for head in model.heads.values():
-            head.set_requires_grad(True)
-            head.requires_individual_saving = True
+            if head.trainable:
+                head.set_requires_grad(True)
+                head.requires_individual_saving = True
+        if model.lm_head is not None and model.lm_head_config.trainable:
+            model.lm_head.requires_grad_(True)
 
     patch_save_pretrained(model)
     return model

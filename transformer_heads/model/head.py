@@ -40,10 +40,12 @@ class MLPHead(nn.Module):
         num_outputs: int = 1,
         output_bias: bool = False,
         trainable: bool = True,
+        block_gradients: bool = False,
     ):
         super().__init__()
         self.name = name
         self.trainable = trainable
+        self.block_gradients = block_gradients
         self.lins = nn.ModuleList()
         if num_layers == 1:
             self.lins.append(nn.Linear(in_size, num_outputs, bias=output_bias))
@@ -77,6 +79,7 @@ class MLPHead(nn.Module):
             head_config.num_outputs or 1,
             head_config.output_bias,
             head_config.trainable,
+            head_config.block_gradients,
         )
 
     def set_requires_grad(self, requires_grad):
@@ -122,6 +125,8 @@ class MLPHead(nn.Module):
         Returns:
             torch.FloatTensor: The output tensor.
         """
+        if self.block_gradients:
+            x = x.detach()
         for i, lin in enumerate(self.lins):
             x = lin(x)
             if i < len(self.lins) - 1:

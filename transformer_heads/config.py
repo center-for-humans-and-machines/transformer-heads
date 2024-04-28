@@ -55,6 +55,7 @@ class HeadConfig(dict):
     trainable: Optional[bool] = True
     loss_weight: Optional[float] = 1.0
     ignore_pads: Optional[bool] = None
+    block_gradients: Optional[bool] = False
 
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
