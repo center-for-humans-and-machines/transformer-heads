@@ -80,7 +80,7 @@ This repository contains multiple jupyter notebooks for a tutorial/illustration 
 ![_images/example_architecture.svg](_images/example_architecture.svg)
 
 ## More custom loss functions and models
-At the state of writing, only a subset of loss functions / models are supported out of the box. At the time of writing, the supported models are `Mistral-7b`, `LLaMA 2` (all model sizes) and `gpt2`. Check [transformer_heads/constants.py](transformer_heads/constants.py) for more up to date info.
+At the state of writing, only a subset of loss functions are supported out of the box. Check [transformer_heads/constants.py](transformer_heads/constants.py) for more up to date info.
 
 However, it is not so hard to add/use different loss functions/models. You'll just need to add their respective information to `loss_fct_map` and `model_type_map`. Just import from `transformer_heads.constants`. To add a loss function, add a mapping from string to torch class. To add a model add a mapping from model type to a 2 tuple out of attribute name of the base model in the Model Class and Base model class. That may sound confusing, but what that means is just the following:
 
@@ -94,3 +94,7 @@ model_type_map["mistral"] = ("model",MistralModel)
 ```
 ## Can my transformer architecture be supported?
 One of the basic assumtions of my library is that there is a transformer class such as the LlamaForCausalLM class of huggingface that has an [attribute pointing to a base model that outputs raw hidden state](https://github.com/huggingface/transformers/blob/7eb3ba82241c927053689270a0751f4ff5d33c54/src/transformers/models/llama/modeling_llama.py#L1116). If your transformers model is built up in a similar way, adding support may be as easy as adding an entry to the [model_type_map](https://github.com/center-for-humans-and-machines/transformer-heads/blob/8ea0805ab95ca01dff7ea73ed9c844df946c17cb/transformer_heads/constants.py#L20) with the name of the attribute and the class of the base model. You can either do that by importing from [constants.py](transformer_heads/constants.py) or by adding it directly and creating a pull request.
+
+## Q&A
+* Is Llama-3 supported? YES! Check [here](https://github.com/center-for-humans-and-machines/transformer-heads/issues/3)
+* How do I use my model for inference? Check the notebooks or [this](https://github.com/center-for-humans-and-machines/transformer-heads/issues/2) issue to get started.
