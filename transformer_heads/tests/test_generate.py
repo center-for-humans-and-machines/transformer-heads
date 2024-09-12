@@ -118,6 +118,8 @@ def test_sample_generation():
         generation_output.head_outputs["regression_hook"].shape,
     )
 
+    print(generation_output.logprobs)
+
 
 if __name__ == "__main__":
     fire.Fire()

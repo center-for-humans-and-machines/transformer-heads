@@ -10,22 +10,22 @@ Functions:
     get_multi_head_transformer: Patch a pretrained transformer model to add multiple heads.
 """
 
-from abc import ABC, abstractmethod
-from os import PathLike
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from abc import ABC, abstractmethod
 from collections import defaultdict
-import numpy as np
+from os import PathLike
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn.functional import log_softmax
-from transformers import PretrainedConfig, PreTrainedModel, GenerationConfig
+from transformers import GenerationConfig, PretrainedConfig, PreTrainedModel
 from transformers.generation.logits_process import LogitsProcessorList
 from transformers.generation.stopping_criteria import (
-    validate_stopping_criteria,
-    StoppingCriteriaList,
     EosTokenCriteria,
+    StoppingCriteriaList,
+    validate_stopping_criteria,
 )
 from transformers.generation.streamers import BaseStreamer
 from transformers.generation.utils import NEED_SETUP_CACHE_CLASSES_MAPPING, logger
@@ -34,7 +34,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPast
 from transformer_heads.config import HeadConfig, create_headed_model_config
 from transformer_heads.constants import loss_fct_map, model_type_map
 from transformer_heads.model.head import MLPHead
-from transformer_heads.output import HeadedModelOutput, HeadedModelGenerateOutput
+from transformer_heads.output import HeadedModelGenerateOutput, HeadedModelOutput
 from transformer_heads.util.helpers import Welfords
 
 
@@ -145,7 +145,15 @@ class HeadedModel(ABC, PreTrainedModel):
             assert (
                 pad_tk_id is not None
             ), "Model must have pad token id set if any head ignores pads."
-            sequence_lengths = torch.eq(input_ids, pad_tk_id).int().argmax(-1) - 1
+            if isinstance(pad_tk_id, list):
+                sequence_lengths = (
+                    torch.isin(input_ids, torch.tensor(pad_tk_id).to(input_ids.device))
+                    .int()
+                    .argmax(-1)
+                    - 1
+                )
+            else:
+                sequence_lengths = torch.eq(input_ids, pad_tk_id).int().argmax(-1) - 1
             sequence_lengths = sequence_lengths % input_ids.shape[-1]
             sequence_lengths = sequence_lengths.to(outputs.hidden_states[0].device)
 
@@ -514,6 +522,9 @@ class HeadedModel(ABC, PreTrainedModel):
             self._reset_cache()
 
         return result
+
+    def __call__(self, *args, **kwargs) -> HeadedModelOutput:
+        return self._wrapped_call_impl(*args, **kwargs)
 
     def _generate(
         self,
