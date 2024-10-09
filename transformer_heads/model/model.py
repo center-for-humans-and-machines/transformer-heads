@@ -67,7 +67,7 @@ class HeadedModel(ABC, PreTrainedModel):
         lm_head (Optional[MLPHead]): The pretrained language model head.
     """
 
-    head_configs: List[HeadConfig]
+    head_configs: dict[str, HeadConfig]
     vocab_size: int
     heads: nn.ModuleDict
     lm_head_config: Optional[HeadConfig]
