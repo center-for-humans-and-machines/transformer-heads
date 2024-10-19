@@ -219,6 +219,11 @@ class HeadedModel(ABC, PreTrainedModel):
                 use_labels = use_labels.to(use_logits.device)
                 loss_by_head[head_config.name] = loss_fct(use_logits, use_labels)
 
+                # Now let's prevent ddp errors for some None gradients
+                # If cross-entropy loss and all are ignored, loss can be nan at this point
+                if not torch.all(loss_by_head[head_config.name].isfinite()):
+                    loss_by_head[head_config.name] = torch.sum(use_logits * 0.0)
+
         if self.adaptive_loss:
             adapted_losses = self.adapt_losses(loss_by_head)
         loss = sum(
