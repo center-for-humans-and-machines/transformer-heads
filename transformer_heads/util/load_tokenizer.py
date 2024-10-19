@@ -5,9 +5,10 @@ Functions:
     load_tokenizer: Loads a tokenizer from a given model path.
 """
 
-from transformers import AutoTokenizer
-import os
 import json
+import os
+
+from transformers import AutoTokenizer
 
 
 def load_tokenizer(model_path):

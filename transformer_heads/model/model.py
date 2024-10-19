@@ -221,29 +221,28 @@ class HeadedModel(ABC, PreTrainedModel):
 
         if self.adaptive_loss:
             adapted_losses = self.adapt_losses(loss_by_head)
-            loss = sum(
-                filter(lambda x: torch.all(x.isfinite()), adapted_losses.values()),
-                loss,
-            )
+        loss = sum(
+            [
+                value
+                * (
+                    self.lm_head_config.loss_weight
+                    if key == "lm_head"
+                    else self.head_configs[key].loss_weight
+                )
+                for key, value in (
+                    adapted_losses if self.adaptive_loss else loss_by_head
+                ).items()
+                if torch.all(value.isfinite())
+            ],
+            loss,
+        )
+        if self.adaptive_loss:
             if self.training:
                 for key, value in loss_by_head.items():
                     if torch.all(torch.isfinite(value)):
                         val = value.item()
-                        self.adaptive_collect[key].update(val)
-        else:
-            loss = sum(
-                [
-                    value
-                    * (
-                        self.lm_head_config.loss_weight
-                        if key == "lm_head"
-                        else self.head_configs[key].loss_weight
-                    )
-                    for key, value in loss_by_head.items()
-                    if torch.all(value.isfinite())
-                ],
-                loss,
-            )
+                        if val != 0.0:
+                            self.adaptive_collect[key].update(val)
 
         return HeadedModelOutput(
             loss=loss,
@@ -272,10 +271,6 @@ class HeadedModel(ABC, PreTrainedModel):
         if self.adaptive_loss:
             self.adaptive_collect = defaultdict(Welfords)
             self.adaptive_warmup = warmup_steps
-            for name, cfg in self.head_configs.items():
-                assert (
-                    cfg.loss_weight == 1.0
-                ), "Adaptive loss not supported with loss weights"
 
     def adapt_losses(self, loss_by_head):
         """
@@ -292,17 +287,19 @@ class HeadedModel(ABC, PreTrainedModel):
         Returns:
             dict[str, float]: A dictionary with the keys being the head names and the values being the new losses.
         """
-        if (
-            len(self.adaptive_collect) == 0
-            or next(iter(self.adaptive_collect.values())).count < self.adaptive_warmup
-        ):
+        if len(self.adaptive_collect) == 0:
             return {key: value * 0 for key, value in loss_by_head.items()}
         else:
             new_loss_by_head = {}
             for key, loss in loss_by_head.items():
-                new_loss_by_head[key] = (
-                    loss - self.adaptive_collect[key].mean
-                ) / np.clip(self.adaptive_collect[key].std, 1e-6, None)
+                if self.adaptive_collect[key].count < self.adaptive_warmup:
+                    new_loss_by_head[key] = loss * 0.0
+                elif loss == 0.0:
+                    new_loss_by_head[key] = loss
+                else:
+                    new_loss_by_head[key] = (
+                        loss - self.adaptive_collect[key].mean
+                    ) / np.clip(self.adaptive_collect[key].std, 1e-6, None)
             return new_loss_by_head
 
     @torch.no_grad()
