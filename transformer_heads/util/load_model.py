@@ -14,13 +14,13 @@ The models can be loaded with or without quantization, and with or without LoRA 
 
 import json
 import os
+from logging import ERROR
 from typing import Type
 
 import torch
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import BitsAndBytesConfig, PretrainedConfig, PreTrainedModel
 from transformers.modeling_utils import logger as hf_logger
-from logging import ERROR
 
 from transformer_heads.config import HeadConfig, create_headed_model_config
 from transformer_heads.model.head import MLPHead

@@ -107,7 +107,7 @@ class HeadedModel(ABC, PreTrainedModel):
         Returns:
             HeadedModelOutput: The output of the model.
         """
-        assert not return_dict
+        assert not return_dict, "return_dict not supported for transformer_heads models"
         output_attentions = (
             output_attentions
             if output_attentions is not None
@@ -360,6 +360,17 @@ class HeadedModel(ABC, PreTrainedModel):
         )
         self._validate_model_kwargs(model_kwargs.copy())
 
+        if not hasattr(generation_config, "_eos_token_tensor"):
+            setattr(
+                generation_config,
+                "_eos_token_tensor",
+                torch.tensor(
+                    [generation_config.eos_token_id],
+                    device=self.device,
+                    dtype=torch.long,
+                ),
+            )
+
         # 2. Set generation parameters if not already defined
         logits_processor = (
             logits_processor if logits_processor is not None else LogitsProcessorList()
@@ -401,8 +412,12 @@ class HeadedModel(ABC, PreTrainedModel):
             model_kwargs["attention_mask"] = (
                 self._prepare_attention_mask_for_generation(
                     inputs_tensor,
-                    generation_config.pad_token_id,
-                    generation_config.eos_token_id,
+                    torch.tensor(
+                        [generation_config.pad_token_id],
+                        device=inputs_tensor.device,
+                        dtype=torch.long,
+                    ),
+                    generation_config._eos_token_tensor,
                 )
             )
 
@@ -490,13 +505,6 @@ class HeadedModel(ABC, PreTrainedModel):
             model_kwargs=model_kwargs,
         )
 
-        # 9. go into different generation modes
-        logits_warper = (
-            self._get_logits_warper(generation_config)
-            if generation_config.do_sample
-            else None
-        )
-
         # 12. expand input_ids with `num_return_sequences` additional sequences per batch
         input_ids, model_kwargs = self._expand_inputs_for_generation(
             input_ids=input_ids,
@@ -509,7 +517,6 @@ class HeadedModel(ABC, PreTrainedModel):
         result = self._generate(
             input_ids,
             logits_processor=prepared_logits_processor,
-            logits_warper=logits_warper,
             max_length=generation_config.max_length,
             eos_token_id=generation_config.eos_token_id,
             do_sample=generation_config.do_sample,
