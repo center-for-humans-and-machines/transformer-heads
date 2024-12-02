@@ -56,6 +56,23 @@ trainer = Trainer(
 
 For a more in-depth introduction and a fully working example, check the [linear probe notebook](notebooks/gpt2/linear_probe.ipynb).
 
+## Explanation of approach for training a transformer value function with QLoRA
+* **The Base Model**
+    * The value model builds on a pre-trained base large language model. 
+    * That is, a transformer model trained on the causal language modelling objective on a large corpus of free flowing text
+    * To solve the task, LLMs have a linear causal language modelling head that projects from the hidden dimension for each token to the number of tokens in the vocabulary.
+    * The base model is not instruct tuned or trained by RLHF
+* **Adding a value head**
+    * The causal language modelling head is removed.
+    * It is replaced by a value head that projects from the hidden dimension for each token to a one-dimensional value prediction.
+    * The value head may be linear or a small multilayer perceptron.
+    * The value head is solving a regression task and is trained via the mean-squared-error loss.
+* **Preparing for QLoRA training**
+    * QLoRA is desired to reduce memory-overhead and enable DDP training.
+    * All weights from the model except the value-head are quantized and frozen.
+    * LoRA weights are trained for all these frozen weights.
+    * The value-head is still fully trained.
+
 ## Joint training of multiple linear probes
 ![_images/multi_linear_probe.svg](_images/multi_linear_probe.svg)
 
