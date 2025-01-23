@@ -1,6 +1,7 @@
 import json
-from tqdm import tqdm
 import sys
+
+from tqdm import tqdm
 
 
 def remove_eval_spam(fname):

@@ -13,8 +13,8 @@ import torch.nn as nn
 from safetensors.torch import load_file, save_file
 
 from transformer_heads.config import HeadConfig
-from transformer_heads.util.model import patch_state_dict
 from transformer_heads.constants import activation_map
+from transformer_heads.util.model import patch_state_dict
 
 
 class MLPHead(nn.Module):
@@ -58,6 +58,9 @@ class MLPHead(nn.Module):
         self.hidden_activation = nn.ReLU()
         self.output_activation = activation_map[output_activation]()
         self.requires_individual_saving = False
+
+    def get_dtype(self):
+        return self.lins[0].weight.dtype
 
     @classmethod
     def from_head_config(cls, head_config: HeadConfig) -> "MLPHead":
@@ -115,7 +118,7 @@ class MLPHead(nn.Module):
             )
         )
 
-    def forward(self, x) -> torch.FloatTensor:
+    def forward(self, x: torch.Tensor) -> torch.FloatTensor:
         """
         Performs a forward pass through the MLP head.
 
@@ -125,6 +128,7 @@ class MLPHead(nn.Module):
         Returns:
             torch.FloatTensor: The output tensor.
         """
+        # x = x.type(self.lins[0].weight.dtype)
         if self.block_gradients:
             x = x.detach()
         for i, lin in enumerate(self.lins):

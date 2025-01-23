@@ -13,14 +13,10 @@ from dataclasses import dataclass
 from math import sqrt
 from typing import Any, Dict, List
 
+import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from transformers import (
-    AutoConfig,
-    GPT2LMHeadModel,
-    LlamaForCausalLM,
-    MistralForCausalLM,
-)
+from transformers import AutoConfig
 
 
 @dataclass
@@ -83,6 +79,38 @@ def get_model_params(model_path: str):
     if model_path == "gpt2" and "hidden_size" not in cfg:
         cfg["hidden_size"] = 768
     return cfg
+
+
+def compare_dicts(dict1: Dict[str, Any], dict2: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Compare two dictionaries with the same keys and return all keys with differing values.
+
+    Args:
+        dict1 (Dict[str, Any]): The first dictionary.
+        dict2 (Dict[str, Any]): The second dictionary.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the keys with differing values and their values from both dictionaries.
+    """
+    differences = {}
+    for key in dict1:
+        if isinstance(dict1[key], torch.Tensor):
+            diff = not torch.equal(dict1[key], dict2[key])
+        elif isinstance(dict1[key], np.ndarray):
+            diff = not np.array_equal(dict1[key], dict2[key])
+        else:
+            diff = dict1[key] != dict2[key]
+        if diff:
+            differences[key] = {"dict1": dict1[key], "dict2": dict2[key]}
+    return differences
+
+
+def compare_objects(obj1: Any, obj2: Any, pre=""):
+    diffs = compare_dicts(obj1.__dict__, obj2.__dict__)
+    for key, value in diffs.items():
+        print(pre, key)
+        if hasattr(value["dict1"], "__dict__") and hasattr(value["dict2"], "__dict__"):
+            compare_objects(value["dict1"], value["dict2"], pre + "\t")
 
 
 class Welfords:
