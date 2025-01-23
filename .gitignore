@@ -2,11 +2,11 @@
 *.safetensors
 mistral_headed_qlora/
 adapter_config.json
-head_configs.jons
+head_configs.json
 **/wandb/**
 **/.ipynb_checkpoints/**
 **/checkpoint-*/**
 **/build/**
-**/mistral/**
 **/base/**
 **/tmp/**
+notebooks/mistral/**

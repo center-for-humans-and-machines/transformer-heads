@@ -1,18 +1,10 @@
 import torch
 from fire import Fire
-from peft import LoraConfig
-from transformers import AutoTokenizer, BitsAndBytesConfig, MistralForCausalLM
+from transformers import AutoTokenizer, BitsAndBytesConfig
 
 from transformer_heads.config import HeadConfig
-from transformer_heads.model.model import get_multi_head_transformer
-from transformer_heads.output import HeadedModelOutput
-from transformer_heads.util.load_model import (
-    create_headed_qlora,
-    load_headed,
-    load_lora_with_heads,
-)
 from transformer_heads.util.helpers import get_model_params
-from transformer_heads.util.model import print_trainable_parameters
+from transformer_heads.util.load_model import load_headed
 
 heads = [
     HeadConfig(
