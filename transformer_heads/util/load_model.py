@@ -84,6 +84,7 @@ def load_headed(
             4
             if quantization_config.load_in_4bit
             else 8 if quantization_config.load_in_8bit else 32
+            else 8 if quantization_config.load_in_8bit else 32
         )
     base_model_config = base_model_class.config_class.from_pretrained(model_name)
     headed_config_class = create_headed_model_config(base_model_class.config_class)
@@ -239,12 +240,15 @@ def create_headed_qlora(
         gradient_checkpointing (bool, optional): Whether to prepare the model for gradient checkpointing.
         **kwargs: Additional keyword arguments to pass to from_pretrained.
     """
-    patch_quantization_config(quantization_config)
-    bits = (
-        4
-        if quantization_config.load_in_4bit
-        else 8 if quantization_config.load_in_8bit else 32
-    )
+    if quantization_config is None:
+        bits = 32
+    else:
+        bits = (
+            4
+            if quantization_config.load_in_4bit
+            else 8 if quantization_config.load_in_8bit else 32
+        )
+        patch_quantization_config(quantization_config)
     base_model_config: PretrainedConfig = base_model_class.config_class.from_pretrained(
         model_name
     )
@@ -271,14 +275,9 @@ def create_headed_qlora(
 
     model = get_peft_model(model, lora_config)
 
-    if fully_trained_heads:
-        head: MLPHead
-        for head in model.heads.values():
-            if head.trainable:
-                head.set_requires_grad(True)
-                head.requires_individual_saving = True
-        if model.lm_head is not None and model.lm_head_config.trainable:
-            model.lm_head.requires_grad_(True)
+    if gradient_checkpointing:
+        model.enable_input_require_grads()
 
+    set_requires_grad(model, fully_trained_heads)
     patch_save_pretrained(model)
     return model
