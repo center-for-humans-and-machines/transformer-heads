@@ -1,15 +1,12 @@
-from transformer_heads.config import HeadConfig
-from transformer_heads.util.helpers import get_model_params
-from transformer_heads import create_headed_qlora
-from transformer_heads.output import HeadedModelGenerateOutput
-from transformers import (
-    BitsAndBytesConfig,
-    AutoTokenizer,
-    GenerationConfig,
-)
-from peft import LoraConfig
 import fire
 import torch
+from peft import LoraConfig
+from transformers import AutoTokenizer, BitsAndBytesConfig, GenerationConfig
+
+from transformer_heads import create_headed_qlora
+from transformer_heads.config import HeadConfig
+from transformer_heads.output import HeadedModelGenerateOutput
+from transformer_heads.util.helpers import get_model_params
 
 heads = [
     HeadConfig(

@@ -11,7 +11,7 @@ Functions:
 """
 
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections import defaultdict
 from os import PathLike
 from typing import Any, Callable, Dict, List, Optional, Type, Union
@@ -27,7 +27,6 @@ from transformers.generation.stopping_criteria import (
     StoppingCriteriaList,
     validate_stopping_criteria,
 )
-from transformers.generation.streamers import BaseStreamer
 from transformers.generation.utils import NEED_SETUP_CACHE_CLASSES_MAPPING, logger
 from transformers.modeling_outputs import BaseModelOutputWithPast
 
@@ -167,11 +166,16 @@ class HeadedModel(ABC, PreTrainedModel):
                     continue
                 head = self.lm_head
                 head_config = self.lm_head_config
+                dtype = self.lm_head.weight.dtype
             else:
-                head = self.heads[key]
+                head: MLPHead = self.heads[key]
                 head_config = self.head_configs[key]
+                dtype = head.get_dtype()
+
             selected_hidden_states = hidden_states[head_config.layer_hook]
-            logits: torch.FloatTensor = head(selected_hidden_states)
+            logits: torch.FloatTensor = head(selected_hidden_states.to(dtype)).to(
+                torch.float32
+            )
             out_preds[head_config.name] = logits
             if (
                 labels is not None
@@ -409,16 +413,16 @@ class HeadedModel(ABC, PreTrainedModel):
             and requires_attention_mask
             and accepts_attention_mask
         ):
-            model_kwargs["attention_mask"] = (
-                self._prepare_attention_mask_for_generation(
-                    inputs_tensor,
-                    torch.tensor(
-                        [generation_config.pad_token_id],
-                        device=inputs_tensor.device,
-                        dtype=torch.long,
-                    ),
-                    generation_config._eos_token_tensor,
-                )
+            model_kwargs[
+                "attention_mask"
+            ] = self._prepare_attention_mask_for_generation(
+                inputs_tensor,
+                torch.tensor(
+                    [generation_config.pad_token_id],
+                    device=inputs_tensor.device,
+                    dtype=torch.long,
+                ),
+                generation_config._eos_token_tensor,
             )
 
         # decoder-only models should use left-padding for generation

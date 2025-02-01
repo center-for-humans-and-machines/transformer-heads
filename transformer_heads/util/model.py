@@ -79,6 +79,42 @@ def find_all_linear_names(bits, model, noadd=[]):
     return list(lora_module_names)
 
 
+def compare_all_params(model1, model2):
+    """
+    Compare all parameters of two models.
+
+    Args:
+        model1 (torch.nn.Module): The first model to compare.
+        model2 (torch.nn.Module): The second model to compare.
+    """
+    name1: str
+    name2: str
+    for (name1, param1), (name2, param2) in zip(
+        model1.named_parameters(), model2.named_parameters()
+    ):
+        if name1.removeprefix("base_model.model.") != name2.removeprefix(
+            "base_model.model."
+        ):
+            print("name mismatch", name1, name2)
+        if param1.shape != param2.shape:
+            print("shape mismatch", name1, param2.shape, param2.shape)
+        if param1.dtype != param2.dtype:
+            print("dtype mismatch", name1, param1.dtype, param2.dtype)
+        elif not torch.allclose(param1, param2):
+            print("values not even close", name1)
+            print("Param1_min:", torch.min(param1).item())
+            print("Param1_max:", torch.max(param1).item())
+            print("Mean diff:", torch.mean(torch.abs(param1 - param2)).item())
+            print("Max diff:", torch.max(torch.abs(param1 - param2)).item())
+        elif not torch.all(param1 == param2):
+            print("values not equal", name1)
+
+
+def print_all_param_info(model: torch.nn.Module):
+    for name, param in model.named_parameters():
+        print(name, param.dtype, param.requires_grad)
+
+
 def print_trainable_parameters(model, use_4bit=False):
     """
     Print some information about the trainable parameters off a model.

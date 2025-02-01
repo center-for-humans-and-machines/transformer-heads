@@ -25,6 +25,11 @@ from transformers.modeling_utils import logger as hf_logger
 from transformer_heads.config import HeadConfig, create_headed_model_config
 from transformer_heads.model.head import MLPHead
 from transformer_heads.model.model import HeadedModel, get_multi_head_transformer
+from transformer_heads.util.prepare_model import (
+    disable_requires_grad,
+    set_compute_dtype,
+    set_requires_grad,
+)
 
 from .model import find_all_linear_names, patch_save_pretrained
 
@@ -51,6 +56,7 @@ def load_headed(
     quantization_config: BitsAndBytesConfig = None,
     freeze_base_model: bool = True,
     adaptive_loss: bool = False,
+    torch_dtype=torch.float32,
     **kwargs,
 ) -> HeadedModel:
     """
@@ -84,7 +90,6 @@ def load_headed(
             4
             if quantization_config.load_in_4bit
             else 8 if quantization_config.load_in_8bit else 32
-            else 8 if quantization_config.load_in_8bit else 32
         )
     base_model_config = base_model_class.config_class.from_pretrained(model_name)
     headed_config_class = create_headed_model_config(base_model_class.config_class)
@@ -96,13 +101,16 @@ def load_headed(
         config=config,
         device_map=device_map,
         quantization_config=quantization_config,
+        torch_dtype=torch_dtype,
         **kwargs,
     )
     model.set_adaptive_loss(adaptive_loss)
     if freeze_base_model and quantization_config is None:
         for _name, param in model.named_parameters():
             param.requires_grad = False
-    if quantization_config is not None and bits < 16:
+    if quantization_config is not None and (
+        quantization_config.load_in_4bit or quantization_config.load_in_8bit
+    ):
         if not only_inference:
             model = prepare_model_for_kbit_training(model)
             model._hf_peft_config_loaded = (
@@ -123,6 +131,8 @@ def load_headed(
         and model.lm_head_config.trainable
     ):
         model.lm_head.requires_grad_(True)
+
+    set_compute_dtype(model, torch_dtype)
     return model
 
 
@@ -152,15 +162,8 @@ def load_lora_with_heads(
         **kwargs: Additional keyword arguments to pass to from_pretrained.
     """
 
-    if quantization_config is None:
-        bits = 32
-    else:
+    if quantization_config is not None:
         patch_quantization_config(quantization_config)
-        bits = (
-            4
-            if quantization_config.load_in_4bit
-            else 8 if quantization_config.load_in_8bit else 32
-        )
     adapt_config_path = os.path.join(path, "adapter_config.json")
     with open(adapt_config_path, "r") as f:
         base_model_path = json.load(f)["base_model_name_or_path"]
@@ -185,32 +188,21 @@ def load_lora_with_heads(
         torch_dtype=torch_dtype,
         **kwargs,
     )
+
     hf_logger.setLevel(before_level)
 
-    if not only_inference:
-        model: HeadedModel = prepare_model_for_kbit_training(
-            model, use_gradient_checkpointing=gradient_checkpointing
-        )
     model.load_adapter(path, device_map=device_map)
-
-    if not only_inference:
-        for name, param in model.named_parameters():
-            if "lora" in name:
-                param.requires_grad = True
     head: MLPHead
     for head in model.heads.values():
         head.load_from_safetensors(path)
-        if not only_inference and fully_trained_heads:
-            head.set_requires_grad(True)
-            head.requires_individual_saving = True
 
-    if (
-        not only_inference
-        and model.lm_head is not None
-        and model.lm_head_config.trainable
-    ):
-        model.lm_head.requires_grad_(True)
+    if only_inference:
+        disable_requires_grad(model)
+    else:
+        set_requires_grad(model, fully_trained_heads)
+
     patch_save_pretrained(model)
+    set_compute_dtype(model, torch_dtype)
     return model
 
 
@@ -224,6 +216,7 @@ def create_headed_qlora(
     device_map="auto",
     gradient_checkpointing: bool = False,
     adaptive_loss: bool = False,
+    torch_dtype=torch.float32,
     **kwargs,
 ) -> HeadedModel:
     """
@@ -262,16 +255,12 @@ def create_headed_qlora(
         config=config,
         device_map=device_map,
         quantization_config=quantization_config,
-        **kwargs,
+        torch_dtype=torch_dtype,
     )
     model.set_adaptive_loss(adaptive_loss)
 
     if lora_config.target_modules is None:
         lora_config.target_modules = find_all_linear_names(bits, model, noadd=["heads"])
-
-    model = prepare_model_for_kbit_training(
-        model, use_gradient_checkpointing=gradient_checkpointing
-    )
 
     model = get_peft_model(model, lora_config)
 
@@ -280,4 +269,5 @@ def create_headed_qlora(
 
     set_requires_grad(model, fully_trained_heads)
     patch_save_pretrained(model)
+    set_compute_dtype(model, torch_dtype)
     return model
