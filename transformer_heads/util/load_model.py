@@ -201,6 +201,9 @@ def load_lora_with_heads(
     else:
         set_requires_grad(model, fully_trained_heads)
 
+    if gradient_checkpointing:
+        model.enable_input_require_grads()
+
     patch_save_pretrained(model)
     set_compute_dtype(model, torch_dtype)
     return model
@@ -264,10 +267,9 @@ def create_headed_qlora(
 
     model = get_peft_model(model, lora_config)
 
-    if gradient_checkpointing:
-        model.enable_input_require_grads()
-
     set_requires_grad(model, fully_trained_heads)
     patch_save_pretrained(model)
     set_compute_dtype(model, torch_dtype)
+    if gradient_checkpointing:
+        model.enable_input_require_grads()
     return model
