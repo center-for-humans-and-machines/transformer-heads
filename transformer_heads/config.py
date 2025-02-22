@@ -134,7 +134,8 @@ def create_headed_model_config(
             """
             out = cls(output_heads)
             for key, value in base_config.__dict__.items():
-                setattr(out, key, value)
+                if key not in "output_heads":
+                    setattr(out, key, value)
             return out
 
         def to_base_class(self) -> PretrainedConfig:
