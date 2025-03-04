@@ -50,7 +50,9 @@ def evaluate_head_wise(
     for i, batch in tqdm(
         enumerate(loader), total=len(loader) * epochs, desc="Evaluating"
     ):
-        outputs: HeadedModelOutput = model(**batch)
+        outputs: HeadedModelOutput = model(
+            **{key: value.to(model.device) for key, value in batch.items()}
+        )
         for key in outputs.loss_by_head:
             losses_by_head[key].append(float(outputs.loss_by_head[key].item()))
         losses.append(float(outputs.loss.item()))
@@ -93,7 +95,7 @@ def get_some_preds(
         enumerate(loader), total=min(n, len(loader)), desc="Predicting"
     ):
         inputs.append(tokenizer.decode(batch["input_ids"].squeeze()))
-        outputs = model(**batch)
+        outputs = model(**{key: value.to(model.device) for key, value in batch.items()})
         for key in outputs.preds_by_head:
             if classification:
                 p = outputs.preds_by_head[key][0, -1, :]
@@ -127,7 +129,7 @@ def get_top_n_preds(
         dict[str, list[str]]: The top n predictions for each head.
     """
     input = tokenizer(text, return_tensors="pt")
-    output = model(**input)
+    output = model({key: value.to(model.device) for key, value in input.items()})
     out = {}
     for head_name in output.preds_by_head:
         logits = output.preds_by_head[head_name]
