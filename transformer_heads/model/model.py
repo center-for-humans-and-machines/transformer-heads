@@ -413,16 +413,10 @@ class HeadedModel(ABC, PreTrainedModel):
             and requires_attention_mask
             and accepts_attention_mask
         ):
-            model_kwargs[
-                "attention_mask"
-            ] = self._prepare_attention_mask_for_generation(
-                inputs_tensor,
-                torch.tensor(
-                    [generation_config.pad_token_id],
-                    device=inputs_tensor.device,
-                    dtype=torch.long,
-                ),
-                generation_config._eos_token_tensor,
+            model_kwargs["attention_mask"] = (
+                self._prepare_attention_mask_for_generation(
+                    inputs_tensor, generation_config, kwargs
+                )
             )
 
         # decoder-only models should use left-padding for generation

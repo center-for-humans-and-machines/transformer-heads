@@ -3,7 +3,7 @@ import torch
 from peft import LoraConfig
 from transformers import AutoTokenizer, BitsAndBytesConfig, GenerationConfig
 
-from transformer_heads import create_headed_qlora
+from transformer_heads import create_headed_qlora, load_lora_with_heads
 from transformer_heads.config import HeadConfig
 from transformer_heads.output import HeadedModelGenerateOutput
 from transformer_heads.util.helpers import get_model_params
@@ -94,15 +94,43 @@ def test_greedy_generation():
     )
 
 
+def save_and_load_model(model):
+    model.save_pretrained("headed_model_qlora")
+    print("Saved headed qlora model successfully!")
+    model_path = "meta-llama/Meta-Llama-3-8B"
+    params = get_model_params(model_path)
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        load_in_8bit=False,
+    )
+
+    model_loaded = load_lora_with_heads(
+        params["model_class"],
+        "headed_model_qlora",
+        quantization_config,
+        device_map="cuda",
+        only_inference=False,
+        torch_dtype=torch.bfloat16,
+    )
+    return model_loaded
+
+
 def test_sample_generation():
     model, tk = _get_model_tk()
+    tk.pad_token_id = tk.eos_token_id
     in_text = "God is dead and we"
 
     inputs = tk.encode(in_text, return_tensors="pt")
 
     gen_config = GenerationConfig(
-        do_sample=True, max_new_tokens=10, temperature=1.0, top_k=50
+        do_sample=True,
+        max_new_tokens=10,
+        temperature=1.0,
+        top_k=50,
+        _pad_token_tensor=torch.tensor([tk.pad_token_id], device=model.device),
     )
+
+    save_and_load_model(model)
 
     generation_output: HeadedModelGenerateOutput = model.generate(
         inputs.to(model.device), generation_config=gen_config
