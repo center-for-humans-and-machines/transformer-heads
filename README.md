@@ -6,6 +6,8 @@
     </p>
 </h4>
 
+## This library is currently broken with newer transformers versions and is not maintained anymore
+
 # Transformer Heads
 This library aims to be an allround toolkit for attaching, training, saving and loading of new heads for transformer models.  
 A new head could be: 
